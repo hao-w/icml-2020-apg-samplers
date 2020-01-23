@@ -776,12 +776,12 @@ In Figure~\ref{plot-mse-bmnist}, we show the mean squared error between the vide
 The results confirm that performance improves with increasing number of Gibbs sweeps $K$.
 In certain cases, a larger number of time points $T$ in fact improves convergence as a function of the number of sweeps $K$.
 
-% \begin{figure}[!t]
-%     \centering
-%     \includegraphics[width=\columnwidth]{figures/bmnist-mse.pdf}
-%     \caption{Mean squared error between video frames and reconstructions as a function of the number of APG sweeps. }
-%     \label{plot-mse-bmnist}
-% \end{figure}
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/bmnist-mse.pdf}
+    \caption{Mean squared error between video frames and reconstructions as a function of the number of APG sweeps. }
+    \label{plot-mse-bmnist}
+\end{figure}
 
 \section{Conclusion}
 One of the challenges in amortized inference for deep generative models is learning high-quality proposals for models with a structured prior over a high-dimensional set of latent variables. These priors arise naturally when, rather than encoding a single data point (e.g.~an image), we wish to encode a dataset (e.g.~a sequence of images). 
