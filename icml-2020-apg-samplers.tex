@@ -527,20 +527,20 @@ The advantage of this parameterization is it allows us to train approximate Gibb
 \begin{figure*}[t!]
   \centering
   \begin{subfigure}[t]{0.5\textwidth}
-  \includegraphics[width=80mm]{figures/gmm_samples_1datasets.pdf}
+  \includegraphics[width=85mm]{figures/gmm_samples.pdf}
   \vspace*{-1mm}
   \caption{GMM}
   \label{samples-gmm}
   \vspace{-1ex}
   \end{subfigure}%
   \begin{subfigure}[t]{0.5\textwidth}
-  \includegraphics[width=80mm]{figures/dgmm_samples_1datasets.pdf}
+  \includegraphics[width=85mm]{figures/dgmm_samples.pdf}
   \vspace*{-1mm}
   \caption{DGMM}
   \label{samples-dgmm}
   \vspace{-1ex}
   \end{subfigure}
-  \caption{Samples from the GMM and the DGMM. In both (\textbf{a}) GMM and (\textbf{b}) DGMM, the left column shows one test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
+  \caption{Single samples in both (\textbf{a}) GMM and (\textbf{b}) DGMM. The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
   \label{samples-mixture}
 \end{figure*}
 
@@ -776,12 +776,12 @@ In Figure~\ref{plot-mse-bmnist}, we show the mean squared error between the vide
 The results confirm that performance improves with increasing number of Gibbs sweeps $K$.
 In certain cases, a larger number of time points $T$ in fact improves convergence as a function of the number of sweeps $K$.
 
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=\columnwidth]{figures/bmnist-mse.pdf}
-    \caption{Mean squared error between video frames and reconstructions as a function of the number of APG sweeps. }
-    \label{plot-mse-bmnist}
-\end{figure}
+% \begin{figure}[!t]
+%     \centering
+%     \includegraphics[width=\columnwidth]{figures/bmnist-mse.pdf}
+%     \caption{Mean squared error between video frames and reconstructions as a function of the number of APG sweeps. }
+%     \label{plot-mse-bmnist}
+% \end{figure}
 
 \section{Conclusion}
 One of the challenges in amortized inference for deep generative models is learning high-quality proposals for models with a structured prior over a high-dimensional set of latent variables. These priors arise naturally when, rather than encoding a single data point (e.g.~an image), we wish to encode a dataset (e.g.~a sequence of images). 
