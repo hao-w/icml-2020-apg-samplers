@@ -144,7 +144,14 @@
 % \printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
 
 \begin{abstract}
-We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. Each conditional update is a neural proposal, which we train by minimizing the inclusive KL divergence relative to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. Experiments demonstrate that learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
+We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models.
+APG samplers combine variational inference to learn approximate Gibbs conditionals for low-dimensional blocks of variables with MCMC methods to simulate high quality samples from the high-dimensional conditional posterior. %technically not 100% correct bacause we are not sampling from the exact conditional posterior. However the word 'simulate' is might still be okay here?
+Each conditional proposal is parameterized by a neural network which we train by minimizing the inclusive KL divergence relative to the conditional posterior. 
+To appropriately account for the size of the input data, we develop a new neural network parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. 
+Experiments demonstrate that the learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. 
+Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
+
+% We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. Each conditional update is a neural proposal, which we train by minimizing the inclusive KL divergence relative to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. Experiments demonstrate that learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
 \end{abstract}
 
 \section{Introduction}
@@ -544,6 +551,40 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \label{samples-mixture}
 \end{figure*}
 
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
+  \caption{Convergence of $\log p_\theta(x, z)$ in GMM (the test sets in Figure~\ref{samples-mixture}).}
+  \label{fig:convergence-gmm}
+\end{figure}
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/kl_training_gmm.pdf}
+  \caption{Objective $\mathrm{KL} (p_\q(z_b | x, z_{-b} || q_\f(z_b | x, z_{-b})))$ as a function of wall-clock time for GMM experiment. Comparison among various number of sweeps given the same computation budget.}
+  \label{fig:convergence-gmm}
+\end{figure}
+
+\begin{figure}[t!]
+  \centering
+  \begin{subfigure}[t]{0.5\columnwidth}
+  \includegraphics[width=40mm]{figures/heatmap_log_joint_gmm.pdf}
+  \vspace*{-1mm}
+  \caption{GMM}
+  \label{fig:heatmap-gmm}
+  \vspace{-1ex}
+  \end{subfigure}%
+  \begin{subfigure}[t]{0.5\columnwidth}
+  \includegraphics[width=40mm]{figures/heatmap_log_joint_dgmm.pdf}
+  \vspace*{-1mm}
+  \caption{DGMM}
+  \label{fig:heatmap-dgmm}
+  \vspace{-1ex}
+  \end{subfigure}
+  \caption{Heatmap of $\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
+  \label{fig:heatmap-both}
+\end{figure}
+
 \section{Related Work}
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{ marino2018iterative}. Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. Work by  Hoffman~\cite{hoffman2017learning} applies Hamiltonian Monte Carlo to samples that are generated from the encoder, which serves to improve the gradient estimate w.r.t.~$\theta$ (Equation~\ref{eq:grad-theta}), while learning the inference network using a standard reparameterized ELBO objective. 
 % Li et al.~\cite{li2017approximate} consider learning an inference network which is used for initializing an MCMC chain. They focus on a setting where the density of the inference network cannot be evaluated.
@@ -561,66 +602,100 @@ Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to lea
 \label{sec:experiments}
 
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
-\begin{figure*}[t!]
-  \centering
-  \includegraphics[width=1.0\linewidth]{figures/both-budget-dot-v2.pdf}
-  \vspace*{-3mm}
-  {\small \hspace{1em}(a) $\log p_\q(x, z)$\hspace{22em}(b) ESS / L}\\
-  \caption{APG sampler performance as a function of number of sweeps $K$ for a constant sample budget $K \cdot L = 1000$.}
-  \label{fig:budget}
-\end{figure*}
 
-\setlength{\tabcolsep}{4pt}
-\begin{table*}[t!]
-    \centering
-    \caption{APG performance in the GMM and DGMM.
-    The left column in each table shows the change in log joint distribution, i.e. the difference between the log joint in the baseline and the log joint in other models. We compute the ESS/L metric is computed w.r.t.~different variable blocks. For the GMM we additionally report the inclusive KL (Equation~\ref{eq:variational_objective}) for each block.}
-    \begin{subtable}{.45\linewidth}
-    \centering
-    \caption{GMM}
-    \vspace{-0.6em}
-    \begin{tabular}{ccc|cccc}
+% \begin{figure*}[t!]
+%   \centering
+%   \includegraphics[width=1.0\linewidth]{figures/both-budget-dot-v2.pdf}
+%   \vspace*{-3mm}
+%   {\small \hspace{1em}(a) $\log p_\q(x, z)$\hspace{22em}(b) ESS / L}\\
+%   \caption{APG sampler performance as a function of number of sweeps $K$ for a constant sample budget $K \cdot L = 1000$.}
+%   \label{fig:budget}
+% \end{figure*}
+% \setlength{\tabcolsep}{4pt}
+% \begin{table}[t!]
+%     \centering
+%     \caption{APG performance in the GMM and DGMM.
+%     The left column in each table shows the change in log joint distribution, i.e. the difference between the log joint in the baseline and the log joint in other models. We compute the ESS/L metric is computed w.r.t.~different variable blocks. For the GMM we additionally report the inclusive KL (Equation~\ref{eq:variational_objective}) for each block.}
+%     \begin{tabular}{cc|ccc}
      
-    \toprule
-        & $\Delta \log p_\q(x, z)$ & 
-        \multicolumn{3}{c}{ESS/L} &
-        \multicolumn{2}{c}{$\mathrm{KL}(p_\q || q_\f)$}\\
-      & & \{$\tau, \mu, c$\} & \{$\tau, \mu$\} & \{$c$\} &\{$\tau, \mu$\}  & \{$c$\} \\
-    \midrule
-     MLP-RWS & -- & 0.001 & --& -- & -- & --\\
-     LSTM-RWS & 202.2 & 0.104 & -- & -- & --
-     & -- \\
-     APG (K=5) & 198.5 & 0.261 & 0.980 &  0.631 & 0.005 & 0.005
-\\
-     APG (K=10) & 211.9 & 0.398 & 0.981  & 0.760
-     & 0.004 & 0.004
-     \\
-     APG (K=15) & 215.2 & 0.416 & 0.983 & 0.780 & 0.003 & 0.004\\
-    \bottomrule
-    \end{tabular}   
-    \label{table-gmm}
-    \end{subtable}%
-    \begin{subtable}{.7\linewidth}
-    \centering
-    \caption{DGMM}
-    \vspace{-0.6em}
-    \begin{tabular}{cc|cc}
-    \toprule
-     $\Delta \log p_\q(x, z)$ & 
-         \multicolumn{3}{c}{ESS/L} \\
-         & \{$\mu, c, \alpha $\}& \{$\mu$\} & \{$c, \alpha$\}\\
-    \midrule
-    2538 & 0.001 & -- & -- \\
-    -- & 0.001 & -- & --\\
-    6201 & 0.002 & 0.013 & 0.422 \\
-    6293 & 0.002 & 0.019 & 0.454 \\
-    6310 & 0.003 & 0.025 & 0.488 \\
-    \bottomrule
-    \end{tabular}
-    \label{table-dgmm}
-    \end{subtable}
-    \label{table-both-mm}
-\end{table*}
+%     \toprule
+%          & 
+%         \multicolumn{3}{c}{ESS/L} \\
+%     \midrule
+%      RWS & -- & 0.001 & --\\
+%      APG (K=5)  & 0.261 & 0.980 &  0.631  \\
+%      APG (K=10)  & 0.398 & 0.981  & 0.760 \\
+%      APG (K=15)  & 0.416 & 0.983 & 0.780 \\
+%     \bottomrule
+%     \end{tabular}   
+%     \label{table-gmm}
+%     \begin{subtable}{.7\linewidth}
+%     \centering
+%     \caption{DGMM}
+%     \vspace{-0.6em}
+%     \begin{tabular}{c|cc}
+%     \toprule
+%          \multicolumn{3}{c}{ESS/L} \\
+%     \{$\mu, c, \alpha $\}& \{$\mu$\} & \{$c, \alpha$\}\\
+%     \midrule
+%     0.001 & -- & -- \\
+%      0.002 & 0.013 & 0.422 \\
+%      0.002 & 0.019 & 0.454 \\
+%      0.003 & 0.025 & 0.488 \\
+%     \bottomrule
+%     \end{tabular}
+%     \label{table-dgmm}
+%     \end{subtable}
+%     \label{table-both-mm}
+% \end{table}
+
+% \setlength{\tabcolsep}{4pt}
+% \begin{table*}[t!]
+%     \centering
+%     \caption{APG performance in the GMM and DGMM.
+%     The left column in each table shows the change in log joint distribution, i.e. the difference between the log joint in the baseline and the log joint in other models. We compute the ESS/L metric is computed w.r.t.~different variable blocks. For the GMM we additionally report the inclusive KL (Equation~\ref{eq:variational_objective}) for each block.}
+%     \begin{subtable}{.45\linewidth}
+%     \centering
+%     \caption{GMM}
+%     \vspace{-0.6em}
+%     \begin{tabular}{cc|cccc}
+     
+%     \toprule
+%          & 
+%         \multicolumn{3}{c}{ESS/L} &
+%         \multicolumn{2}{c}{$\mathrm{KL}(p_\q || q_\f)$}\\
+%       & \{$\tau, \mu, c$\} & \{$\tau, \mu$\} & \{$c$\} &\{$\tau, \mu$\}  & \{$c$\} \\
+%     \midrule
+%      RWS & -- & 0.001 & --& -- & -- \\
+%      APG (K=5)  & 0.261 & 0.980 &  0.631 & 0.005 & 0.005
+% \\
+%      APG (K=10)  & 0.398 & 0.981  & 0.760
+%      & 0.004 & 0.004
+%      \\
+%      APG (K=15)  & 0.416 & 0.983 & 0.780 & 0.003 & 0.004\\
+%     \bottomrule
+%     \end{tabular}   
+%     \label{table-gmm}
+%     \end{subtable}%
+%     \begin{subtable}{.7\linewidth}
+%     \centering
+%     \caption{DGMM}
+%     \vspace{-0.6em}
+%     \begin{tabular}{c|cc}
+%     \toprule
+%          \multicolumn{3}{c}{ESS/L} \\
+%     \{$\mu, c, \alpha $\}& \{$\mu$\} & \{$c, \alpha$\}\\
+%     \midrule
+%     0.001 & -- & -- \\
+%      0.002 & 0.013 & 0.422 \\
+%      0.002 & 0.019 & 0.454 \\
+%      0.003 & 0.025 & 0.488 \\
+%     \bottomrule
+%     \end{tabular}
+%     \label{table-dgmm}
+%     \end{subtable}
+%     \label{table-both-mm}
+% \end{table*}
 Results on each of these tasks constitute a significant advance relative to the state of the art. Standard VAEs perform poorly at Gaussian mixture modeling tasks, and to our knowledge there are no existing methods that scale to a problem of the complexity of the DGMM for rings. In the context of the unsupervised tracking model, APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. APG is not only is able to scale to models with higher complexity in these settings, but also provides a general framework for performing inference in models with global and local variables, which can be adapted to a variety of model classes with comparative ease.
 
 \subsection{Gaussian Mixture Model}
@@ -647,7 +722,7 @@ where $\mathrm{I}[z_n \!=\! i]$ is an indicator function that evaluates to 1 if 
 
 We employ a variational distribution that updates the global variables $q_\f(\mu, \tau \mid x, c)$ and the local variables $q_\f(c \mid x, \mu, \tau)$, using point-wise neural sufficient statistics modeled after the ones in the analytical updates (see Appendix \ref{appendix:architecture} for architecture details).
 
-We train our models on 20,000 datasets with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.3$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations.
+We train our models on 20,000 datasets with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.1$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations.
 
 We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
 
@@ -881,7 +956,7 @@ which is exactly that form. Now we prove weights in future steps by induction. A
     \frac{\gamma^k(z^{1:k})}
          {q^1(z^1) \prod_{k'=2}^k q^{k'}(z^{k'} \mid z^{1:k'-1})}.    
 \end{align*}
-, then at step $k+1$, the importance weight is the product of incremental weight and incoming weight 
+then at step $k+1$, the importance weight is the product of incremental weight and incoming weight 
 \begin{align*}
     w^{k+1}
     =
