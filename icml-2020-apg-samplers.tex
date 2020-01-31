@@ -155,7 +155,13 @@
 
 %Variational autoencoders are most commonly used to map input data onto a latent code in the form of a continuous vector. 
 
-Amortized variational methods have proven difficult to scale to structured problems, such as inferring positions of multiple objects from video images. We develop amortized population Gibbs (APG) samplers, a class of scalable methods that frames structured variational inference as adaptive importance sampling. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. We train each conditional proposal by minimizing the inclusive KL divergence with respect to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics. Experiments establish that APG methods can produce accurate samples in high-dimensional structured problems where standard autoencoding variational methods fail.
+Amortized variational methods have proven difficult to scale to structured problems, such as inferring positions of multiple objects from video images. We develop amortized population Gibbs (APG) samplers, a class of scalable methods that frames structured variational inference as adaptive importance sampling. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. We train each conditional proposal by minimizing the inclusive KL divergence with respect to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics. Experiments show that APG samplers be used to train highly-structured deep generative models in an unsupervised manner, and achieve substantial improvements in inference accuracy relative to standard autoencoding variational methods.
+
+% , which enables us to learn a structured deep generative model in an unsupervised manner.
+
+% Experiments show that APG samplers can produce accurate samples in high-dimensional structured problems, which enables us to learn a deep generative model in an unsupervised manner.
+% Experiments show that we can train both the deep generative model and inference model in an unsupervised manner using APG methods
+% Experiments establish that APG methods can produce accurate samples in high-dimensional structured problems where standard autoencoding variational methods fail.
 
 %and can be used to train structured deep generative models in an unsupervised manner. %Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding variational methods fail to produce accurate samples.
 
@@ -561,32 +567,32 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \label{fig:convergence-gmm}
 \end{figure}
 
-\begin{figure}[t!]
-\centering
-\includegraphics[width=\columnwidth]{figures/kl_training_gmm.pdf}
-  \caption{Objective $\mathrm{KL} (p_\q(z_b | x, z_{-b} || q_\f(z_b | x, z_{-b})))$ as a function of wall-clock time for GMM experiment. Comparison among various number of sweeps given the same computation budget.}
-  \label{fig:convergence-gmm}
-\end{figure}
+% \begin{figure}[t!]
+% \centering
+% \includegraphics[width=\columnwidth]{figures/kl_training_gmm.pdf}
+%   \caption{Objective $\mathrm{KL} (p_\q(z_b | x, z_{-b} || q_\f(z_b | x, z_{-b})))$ as a function of wall-clock time for GMM experiment. Comparison among various number of sweeps given the same computation budget.}
+%   \label{fig:convergence-gmm}
+% \end{figure}
 
-\begin{figure}[t!]
-  \centering
-  \begin{subfigure}[t]{0.5\columnwidth}
-  \includegraphics[width=40mm]{figures/heatmap_log_joint_gmm.pdf}
-  \vspace*{-1mm}
-  \caption{GMM}
-  \label{fig:heatmap-gmm}
-  \vspace{-1ex}
-  \end{subfigure}%
-  \begin{subfigure}[t]{0.5\columnwidth}
-  \includegraphics[width=40mm]{figures/heatmap_log_joint_dgmm.pdf}
-  \vspace*{-1mm}
-  \caption{DGMM}
-  \label{fig:heatmap-dgmm}
-  \vspace{-1ex}
-  \end{subfigure}
-  \caption{Heatmap of $\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
-  \label{fig:heatmap-both}
-\end{figure}
+% \begin{figure}[t!]
+%   \centering
+%   \begin{subfigure}[t]{0.5\columnwidth}
+%   \includegraphics[width=40mm]{figures/heatmap_log_joint_gmm.pdf}
+%   \vspace*{-1mm}
+%   \caption{GMM}
+%   \label{fig:heatmap-gmm}
+%   \vspace{-1ex}
+%   \end{subfigure}%
+%   \begin{subfigure}[t]{0.5\columnwidth}
+%   \includegraphics[width=40mm]{figures/heatmap_log_joint_dgmm.pdf}
+%   \vspace*{-1mm}
+%   \caption{DGMM}
+%   \label{fig:heatmap-dgmm}
+%   \vspace{-1ex}
+%   \end{subfigure}
+%   \caption{Heatmap of $\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
+%   \label{fig:heatmap-both}
+% \end{figure}
 
 \section{Related Work}
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{ marino2018iterative}. Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. Work by  Hoffman~\cite{hoffman2017learning} applies Hamiltonian Monte Carlo to samples that are generated from the encoder, which serves to improve the gradient estimate w.r.t.~$\theta$ (Equation~\ref{eq:grad-theta}), while learning the inference network using a standard reparameterized ELBO objective. 
@@ -605,15 +611,32 @@ Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to lea
 \label{sec:experiments}
 
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
+\setlength{\tabcolsep}{4pt}
 \begin{table}[t!]
 \centering
-\caption{$\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
-\begin{tabular}{ccccc}
+\caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for GMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
+\begin{tabular}{cccccc}
 \toprule
-K = 1 & K = 5 & K = 10 & K = 20 & K = 50 \\
-L = 1000 & L = 200 & L = 100 & L = 50 & L = 20 \\
+K & 1 & 5 & 10 & 20 & 50  \\
+L & 1000 & 200 & 100 & 50 & 20 \\
 \midrule
-    -722.2 & -523.6 & -453.7 & -426.9 & -425.5\\
+    $\log p_\theta(x, z)$ & -722.2 & -523.6 & -453.7 & -426.9 & -425.8 \\
+    ESS / L & 0.002 & 0.890 & 0.902 & 0.995 & 0.995 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\setlength{\tabcolsep}{4pt}
+\begin{table}[t!]
+\centering
+\caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for DGMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
+\begin{tabular}{cccccc}
+\toprule
+K & 1 & 5 & 10 & 20 & 50  \\
+L & 1000 & 200 & 100 & 50 & 20 \\
+\midrule
+    $\log p_\theta(x, z)$ & -1852 & -1528 & -1423 & -1414 & -1411 \\
+    ESS / L & 0.001 & 0.011 & 0.0562  & 0.0882 & 0.295 \\
 \bottomrule
 \end{tabular}
 \end{table}
