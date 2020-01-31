@@ -144,16 +144,35 @@
 % \printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
 
 \begin{abstract}
-We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models.
-APG samplers combine variational inference to learn approximate Gibbs conditionals for low-dimensional blocks of variables with MCMC methods to simulate high quality samples from the high-dimensional conditional posterior. %technically not 100% correct bacause we are not sampling from the exact conditional posterior. However the word 'simulate' is might still be okay here?
-Each conditional proposal is parameterized by a neural network which we train by minimizing the inclusive KL divergence relative to the conditional posterior. 
-To appropriately account for the size of the input data, we develop a new neural network parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. 
-Experiments demonstrate that the learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. 
-Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
 
-% We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. Each conditional update is a neural proposal, which we train by minimizing the inclusive KL divergence relative to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. Experiments demonstrate that learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
+% We develop amortized population Gibbs (APG) samplers, a new class of autoencoding variational methods for deep probabilistic models. 
+% APG samplers combine variational inference to learn approximate Gibbs conditionals for low-dimensional blocks of variables with MCMC methods to simulate high quality samples from the high-dimensional conditional posterior. %technically not 100% correct bacause we are not sampling from the exact conditional posterior. However the word 'simulate' is might still be okay here?
+% Each conditional proposal is parameterized by a neural network which we train by minimizing the inclusive KL divergence relative to the conditional posterior. 
+% To appropriately account for the size of the input data, we develop a new neural network parameterization in terms of neural sufficient statistics, resulting in quasi-conjugate variational approximations. 
+% Experiments demonstrate that the learned proposals converge to the known analytical conditional posterior in conjugate models, and that APG samplers can learn inference networks for highly-structured deep generative models when the conditional posteriors are intractable. 
+% Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding architectures fail to produce accurate samples.
+
+
+%Variational autoencoders are most commonly used to map input data onto a latent code in the form of a continuous vector. 
+
+Amortized variational methods have proven difficult to scale to structured problems, such as inferring positions of multiple objects from video images. We develop amortized population Gibbs (APG) samplers, a class of scalable methods that frames structured variational inference as adaptive importance sampling. APG samplers construct high-dimensional proposals by iterating over updates to lower-dimensional blocks of variables. We train each conditional proposal by minimizing the inclusive KL divergence with respect to the conditional posterior. To appropriately account for the size of the input data, we develop a new parameterization in terms of neural sufficient statistics. Experiments establish that APG methods can produce accurate samples in high-dimensional structured problems where standard autoencoding variational methods fail.
+
+%and can be used to train structured deep generative models in an unsupervised manner. %Here APG samplers offer a path toward scaling up stochastic variational methods to models in which standard autoencoding variational methods fail to produce accurate samples.
+
+
+%Experiments demonstrate that learned proposals converge to the exact conditional posterior in conjugate models. 
+
+
+%  We develop amortized population Gibbs (APG) samplers, a class of importance sampling methods that perform inference in high-dimensional problems by iterating between updates to lower-dimensional blocks of variables. We parameer 
+
+% conditional proposals by minimizing the inclusive KL divergence relative to the conditional posterior. resulting in quasi-conjugate variational approximations. 
+% In non-conjugate settings, 
+
+%a new class of autoencoding variational methods for deep probabilistic models. APG samplers 
 \end{abstract}
+%%% We introduce APG samplers 
 
+%%%
 \section{Introduction}
 %\vspace{-0.5em}
 
@@ -394,24 +413,8 @@ When the approximate Gibbs kernel converges to the actual Gibbs kernel, this cho
     q_\f(z^{k} \,|\, x, z^{k-1}).
 \end{align*}
 \textbf{Resampling}. In general, the weights $w^k$ in the sequential importance sampling scheme defined above will have a high variance. The weights $w^1$ are just normal importance sampling weights, which themselves will have a high variance when $z$ is high-dimensional, or there are correlations between variables. Moreover, we are now sampling these same variables $k$ times. When the approximate Gibbs kernel converges to the true kernel, this will not increase the variance of weights (since $v^k=1$ in this limit), but during training variance of weights $w^k$ will increase with $k$, since we are now jointly sampling an entire Markov chain.
-\begin{algorithm}[!t]
-    \setstretch{1.2}
-  \caption{\textsc{resample}}
-  \label{alg:resample}
-\begin{algorithmic}[1]
-\small
-  \State \textbf{Input:} $z^{\:1:L}, w^{\:1:L}$
-  \State \textbf{Output:} $z'^{\:1:L}, w'^{\:1:L}$
-  \For {$i = 1$ \textbf{to} $L$}
-    \State $a^i \sim \mathrm{Disc}(\{w^l / \sum_{l' = 1}^L w^{l'}\}_{l=1}^L)$\Comment{Index Selection} 
-    % \State $P(a^i = l) = w^l / \sum_{l' = 1}^L w^{l'}$
-    \State Set $ z'^{\:i} = z^{a^i}$
-    \State Set $ w'^{\:i} = \frac{1}{L} \sum_{l = 1}^L w^l$\Comment{Re-Weigh}
-    \EndFor
-  \State \textbf{Return} $z'^{\:1:L}, w'^{\:1:L}$
-\end{algorithmic}
-\end{algorithm}
-To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step. This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight. Concretely, suppose that we have a set \emph{incoming} samples $\{(w^{k,l}, z^{k,l})\}_{l=1}^L$, then the resampling procedure (see Algorithm~\ref{alg:resample}) selects index $a$ with probability $P(a\!=\!l) = w^{k,l} / \sum_{l'} w^{k,l'}$ and returns an outgoing sample $z'^{k,l} = z^{k,a}$ whose $w'^{k,l} = \frac{1}{L} \sum_l w^{k,l}$ is equal to the average weight. The reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
+
+To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step (see Appendix~\ref{appendix:resample-algo}). This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight. Concretely, suppose that we have a set \emph{incoming} samples $\{(w^{k,l}, z^{k,l})\}_{l=1}^L$, then the resampling procedure (see Algorithm~\ref{alg:resample}) selects index $a$ with probability $P(a\!=\!l) = w^{k,l} / \sum_{l'} w^{k,l'}$ and returns an outgoing sample $z'^{k,l} = z^{k,a}$ whose $w'^{k,l} = \frac{1}{L} \sum_l w^{k,l}$ is equal to the average weight. The reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
 
 When we perform resampling after each sweep, we reduce the variance of importance weights to an extent. However we will likely still have high-variance weights, since each sample from the approximate Gibbs kernel still constitutes a high-dimensional proposal over all variables in the model. To further reduce the variance, we will employ resampling after each block update, rather than after each sweep. Because the incoming weights are now equal at each block update, we can compute gradient estimates using incremental weights $v$ of the form
 \begin{align}
@@ -602,7 +605,18 @@ Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to lea
 \label{sec:experiments}
 
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
-
+\begin{table}[t!]
+\centering
+\caption{$\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
+\begin{tabular}{ccccc}
+\toprule
+K = 1 & K = 5 & K = 10 & K = 20 & K = 50 \\
+L = 1000 & L = 200 & L = 100 & L = 50 & L = 20 \\
+\midrule
+    -722.2 & -523.6 & -453.7 & -426.9 & -425.5\\
+\bottomrule
+\end{tabular}
+\end{table}
 % \begin{figure*}[t!]
 %   \centering
 %   \includegraphics[width=1.0\linewidth]{figures/both-budget-dot-v2.pdf}
@@ -782,7 +796,21 @@ Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and a
   \caption{Inferred digit trajectories (top) and reconstructions (bottom) for test dataset with $D = 5$ digits and $T = 15$ time steps.}
   \label{mnist-qualitative}
 \end{figure*}
-
+\begin{table}[t!]
+    \centering
+    \caption{$\log p_\q (x, z)$ and mean squared error on BMNIST test set with different methods.}
+    \begin{tabular}{ccc}
+     
+    \toprule
+         & $\log p_\q (x, z)$ & MSE \\
+    \midrule
+        VAE & -- & -- \\
+        APG & -- & -- \\
+        HMC & -- & -- \\
+        BPS & -- & -- \\
+    \bottomrule
+    \end{tabular}   
+\end{table}
 We train our model on 20,000 datasets with $N = 200$ data points and $I = 4$ clusters with fixed hyperparameters ($\sigma_0 = 3.5$, $\Sigma_{\epsilon} = 0.2$). We use $20$ datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
 
 Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{samples-dgmm} shows individual samples analogous to the ones in Figure~\ref{samples-gmm}. The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
@@ -1013,6 +1041,26 @@ We can see that individual block updates leave the posterior invariant by propos
     p_\q(\z^k_{\preceq b}\:, \: \z^{k-1}_{\succ b} \mid \x)
     .
 \end{align*}
+
+\section{Resampling Algorithm}
+\label{appendix:resample-algo}
+\begin{algorithm}[!t]
+    \setstretch{1.2}
+  \caption{\textsc{resample}}
+  \label{alg:resample}
+\begin{algorithmic}[1]
+\small
+  \State \textbf{Input:} $z^{\:1:L}, w^{\:1:L}$
+  \State \textbf{Output:} $z'^{\:1:L}, w'^{\:1:L}$
+  \For {$i = 1$ \textbf{to} $L$}
+    \State $a^i \sim \mathrm{Disc}(\{w^l / \sum_{l' = 1}^L w^{l'}\}_{l=1}^L)$\Comment{Index Selection} 
+    % \State $P(a^i = l) = w^l / \sum_{l' = 1}^L w^{l'}$
+    \State Set $ z'^{\:i} = z^{a^i}$
+    \State Set $ w'^{\:i} = \frac{1}{L} \sum_{l = 1}^L w^l$\Comment{Re-Weigh}
+    \EndFor
+  \State \textbf{Return} $z'^{\:1:L}, w'^{\:1:L}$
+\end{algorithmic}
+\end{algorithm}
 
 \section{Proof of the amortized population Gibbs algorithm}
 \label{appendix:proof-algo}
