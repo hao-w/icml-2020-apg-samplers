@@ -20,6 +20,7 @@
 \usepackage[noend]{algpseudocode}
 \usepackage{setspace}
 \usepackage{enumitem}
+\usepackage{subcaption}
 \input{macros}
 
 \definecolor[named]{Blue}{cmyk}{1,0.1,0,0.1}
@@ -540,6 +541,10 @@ A particularly useful case arises in models where the data $\x = \{x_1, \ldots, 
     \lambda^\textsc{l}_n + T^\textsc{l}_\f(\x_n, \z^\textsc{g}).
 \end{align*}
 The advantage of this parameterization is it allows us to train approximate Gibbs updates for global variables in a manner that scales dynamically with the size of the dataset, and appropriately adjusts the posterior variance according to the amount of available data.
+% \begin{figure*}[t!]
+% \centering
+%   \includegraphics[width=2\columnwidth]{figures/gmm_samples_and_baselines.pdf}
+% \end{figure*}
 \begin{figure*}[t!]
   \centering
   \begin{subfigure}[t]{0.5\textwidth}
@@ -560,17 +565,19 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \label{samples-mixture}
 \end{figure*}
 
+
+
 \begin{figure}[t!]
 \centering
-\includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
-  \caption{Convergence of $\log p_\theta(x, z)$ in GMM (the test sets in Figure~\ref{samples-mixture}).}
+\includegraphics[width=\columnwidth]{figures/gmm_blocks_comparison.pdf}
+  \caption{Comparison with with differnt block strategies under the same computation budget.}
   \label{fig:convergence-gmm}
 \end{figure}
 
 % \begin{figure}[t!]
 % \centering
-% \includegraphics[width=\columnwidth]{figures/kl_training_gmm.pdf}
-%   \caption{Objective $\mathrm{KL} (p_\q(z_b | x, z_{-b} || q_\f(z_b | x, z_{-b})))$ as a function of wall-clock time for GMM experiment. Comparison among various number of sweeps given the same computation budget.}
+% \includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
+%   \caption{Comparison with baselines}
 %   \label{fig:convergence-gmm}
 % \end{figure}
 
@@ -607,39 +614,41 @@ Work by Salimans et al.~\cite{salimans2015markov} uses transition kernels in var
 %% - focus on conditional-sleep
 Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to learning Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z \sim p(x, z)$ from the true generative model $p(x,z)$, which means gradients can be estimated using sleep-phase Monte Carlo estimators. This circumvents the need for self-normalized estimators of the form in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Like in our work, the approach by Wang et al.~minimizes the inclusive KL, but uses the learned conditionals to directly define an (approximate) MCMC sampler, rather than using them as proposals in an SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
 
+
 \section{Experiments}
 \label{sec:experiments}
 
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
-\setlength{\tabcolsep}{4pt}
-\begin{table}[t!]
-\centering
-\caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for GMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
-\begin{tabular}{cccccc}
-\toprule
-K & 1 & 5 & 10 & 20 & 50  \\
-L & 1000 & 200 & 100 & 50 & 20 \\
-\midrule
-    $\log p_\theta(x, z)$ & -722.2 & -523.6 & -453.7 & -426.9 & -425.8 \\
-    ESS / L & 0.002 & 0.890 & 0.902 & 0.995 & 0.995 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
-\setlength{\tabcolsep}{4pt}
-\begin{table}[t!]
-\centering
-\caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for DGMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
-\begin{tabular}{cccccc}
-\toprule
-K & 1 & 5 & 10 & 20 & 50  \\
-L & 1000 & 200 & 100 & 50 & 20 \\
-\midrule
-    $\log p_\theta(x, z)$ & -1852 & -1528 & -1423 & -1414 & -1411 \\
-    ESS / L & 0.001 & 0.011 & 0.0562  & 0.0882 & 0.295 \\
-\bottomrule
-\end{tabular}
-\end{table}
+% \setlength{\tabcolsep}{4pt}
+% \begin{table}[t!]
+% \centering
+% \caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for GMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
+% \begin{tabular}{cccccc}
+% \toprule
+% K & 1 & 5 & 10 & 20 & 50  \\
+% L & 1000 & 200 & 100 & 50 & 20 \\
+% \midrule
+%     $\log p_\theta(x, z)$ & -722.2 & -523.6 & -453.7 & -426.9 & -425.8 \\
+%     ESS / L & 0.002 & 0.890 & 0.902 & 0.995 & 0.995 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+% \setlength{\tabcolsep}{4pt}
+% \begin{table}[t!]
+% \centering
+% \caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for DGMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
+% \begin{tabular}{cccccc}
+% \toprule
+% K & 1 & 5 & 10 & 20 & 50  \\
+% L & 1000 & 200 & 100 & 50 & 20 \\
+% \midrule
+%     $\log p_\theta(x, z)$ & -1852 & -1528 & -1423 & -1414 & -1411 \\
+%     ESS / L & 0.001 & 0.011 & 0.0562  & 0.0882 & 0.295 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 % \begin{figure*}[t!]
 %   \centering
 %   \includegraphics[width=1.0\linewidth]{figures/both-budget-dot-v2.pdf}
@@ -734,6 +743,12 @@ L & 1000 & 200 & 100 & 50 & 20 \\
 %     \label{table-both-mm}
 % \end{table*}
 Results on each of these tasks constitute a significant advance relative to the state of the art. Standard VAEs perform poorly at Gaussian mixture modeling tasks, and to our knowledge there are no existing methods that scale to a problem of the complexity of the DGMM for rings. In the context of the unsupervised tracking model, APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. APG is not only is able to scale to models with higher complexity in these settings, but also provides a general framework for performing inference in models with global and local variables, which can be adapted to a variety of model classes with comparative ease.
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
+  \caption{Comparison with baselines}
+  \label{fig:convergence-gmm}
+\end{figure}
 
 \subsection{Gaussian Mixture Model}
 \label{sec:gmm}
