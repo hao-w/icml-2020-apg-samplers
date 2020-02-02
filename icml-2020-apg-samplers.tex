@@ -545,34 +545,27 @@ The advantage of this parameterization is it allows us to train approximate Gibb
 % \centering
 %   \includegraphics[width=2\columnwidth]{figures/gmm_samples_and_baselines.pdf}
 % \end{figure*}
-\begin{figure*}[t!]
-  \centering
-  \begin{subfigure}[t]{0.5\textwidth}
-  \includegraphics[width=85mm]{figures/gmm_samples.pdf}
-  \vspace*{-1mm}
-  \caption{GMM}
-  \label{samples-gmm}
-  \vspace{-1ex}
-  \end{subfigure}%
-  \begin{subfigure}[t]{0.5\textwidth}
-  \includegraphics[width=85mm]{figures/dgmm_samples.pdf}
-  \vspace*{-1mm}
-  \caption{DGMM}
-  \label{samples-dgmm}
-  \vspace{-1ex}
-  \end{subfigure}
-  \caption{Single samples in both (\textbf{a}) GMM and (\textbf{b}) DGMM. The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
-  \label{samples-mixture}
-\end{figure*}
+% \begin{figure*}[t!]
+%   \centering
+%   \begin{subfigure}[t]{0.5\textwidth}
+%   \includegraphics[width=85mm]{figures/gmm_samples.pdf}
+%   \vspace*{-1mm}
+%   \caption{GMM}
+%   \label{samples-gmm}
+%   \vspace{-1ex}
+%   \end{subfigure}%
+%   \begin{subfigure}[t]{0.5\textwidth}
+%   \includegraphics[width=85mm]{figures/dgmm_samples.pdf}
+%   \vspace*{-1mm}
+%   \caption{DGMM}
+%   \label{samples-dgmm}
+%   \vspace{-1ex}
+%   \end{subfigure}
+%   \caption{Single samples in both (\textbf{a}) GMM and (\textbf{b}) DGMM. The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
+%   \label{samples-mixture}
+% \end{figure*}
 
 
-
-\begin{figure}[t!]
-\centering
-\includegraphics[width=\columnwidth]{figures/gmm_blocks_comparison.pdf}
-  \caption{Comparison with with differnt block strategies under the same computation budget.}
-  \label{fig:convergence-gmm}
-\end{figure}
 
 % \begin{figure}[t!]
 % \centering
@@ -615,140 +608,32 @@ Work by Salimans et al.~\cite{salimans2015markov} uses transition kernels in var
 Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to learning Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z \sim p(x, z)$ from the true generative model $p(x,z)$, which means gradients can be estimated using sleep-phase Monte Carlo estimators. This circumvents the need for self-normalized estimators of the form in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Like in our work, the approach by Wang et al.~minimizes the inclusive KL, but uses the learned conditionals to directly define an (approximate) MCMC sampler, rather than using them as proposals in an SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
 
 
+
+
 \section{Experiments}
 \label{sec:experiments}
 
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
 
-% \setlength{\tabcolsep}{4pt}
-% \begin{table}[t!]
-% \centering
-% \caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for GMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
-% \begin{tabular}{cccccc}
-% \toprule
-% K & 1 & 5 & 10 & 20 & 50  \\
-% L & 1000 & 200 & 100 & 50 & 20 \\
-% \midrule
-%     $\log p_\theta(x, z)$ & -722.2 & -523.6 & -453.7 & -426.9 & -425.8 \\
-%     ESS / L & 0.002 & 0.890 & 0.902 & 0.995 & 0.995 \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/gmm_samples.pdf}
+  \vspace*{-1mm}
+  \label{samples-gmm}
+  \caption{Single samples in GMM . The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates.}
+\end{figure}
 
-% \setlength{\tabcolsep}{4pt}
-% \begin{table}[t!]
-% \centering
-% \caption{$\log p_\theta(x, z)$ and ESS (the test sets in Figure~\ref{samples-mixture}) for DGMM as a function of various numebr of sweeps under the same computation budget computation budget $K \cdot L = 1000$.}
-% \begin{tabular}{cccccc}
-% \toprule
-% K & 1 & 5 & 10 & 20 & 50  \\
-% L & 1000 & 200 & 100 & 50 & 20 \\
-% \midrule
-%     $\log p_\theta(x, z)$ & -1852 & -1528 & -1423 & -1414 & -1411 \\
-%     ESS / L & 0.001 & 0.011 & 0.0562  & 0.0882 & 0.295 \\
-% \bottomrule
-% \end{tabular}
-% \end{table}
-% \begin{figure*}[t!]
-%   \centering
-%   \includegraphics[width=1.0\linewidth]{figures/both-budget-dot-v2.pdf}
-%   \vspace*{-3mm}
-%   {\small \hspace{1em}(a) $\log p_\q(x, z)$\hspace{22em}(b) ESS / L}\\
-%   \caption{APG sampler performance as a function of number of sweeps $K$ for a constant sample budget $K \cdot L = 1000$.}
-%   \label{fig:budget}
-% \end{figure*}
-% \setlength{\tabcolsep}{4pt}
-% \begin{table}[t!]
-%     \centering
-%     \caption{APG performance in the GMM and DGMM.
-%     The left column in each table shows the change in log joint distribution, i.e. the difference between the log joint in the baseline and the log joint in other models. We compute the ESS/L metric is computed w.r.t.~different variable blocks. For the GMM we additionally report the inclusive KL (Equation~\ref{eq:variational_objective}) for each block.}
-%     \begin{tabular}{cc|ccc}
-     
-%     \toprule
-%          & 
-%         \multicolumn{3}{c}{ESS/L} \\
-%     \midrule
-%      RWS & -- & 0.001 & --\\
-%      APG (K=5)  & 0.261 & 0.980 &  0.631  \\
-%      APG (K=10)  & 0.398 & 0.981  & 0.760 \\
-%      APG (K=15)  & 0.416 & 0.983 & 0.780 \\
-%     \bottomrule
-%     \end{tabular}   
-%     \label{table-gmm}
-%     \begin{subtable}{.7\linewidth}
-%     \centering
-%     \caption{DGMM}
-%     \vspace{-0.6em}
-%     \begin{tabular}{c|cc}
-%     \toprule
-%          \multicolumn{3}{c}{ESS/L} \\
-%     \{$\mu, c, \alpha $\}& \{$\mu$\} & \{$c, \alpha$\}\\
-%     \midrule
-%     0.001 & -- & -- \\
-%      0.002 & 0.013 & 0.422 \\
-%      0.002 & 0.019 & 0.454 \\
-%      0.003 & 0.025 & 0.488 \\
-%     \bottomrule
-%     \end{tabular}
-%     \label{table-dgmm}
-%     \end{subtable}
-%     \label{table-both-mm}
-% \end{table}
-
-% \setlength{\tabcolsep}{4pt}
-% \begin{table*}[t!]
-%     \centering
-%     \caption{APG performance in the GMM and DGMM.
-%     The left column in each table shows the change in log joint distribution, i.e. the difference between the log joint in the baseline and the log joint in other models. We compute the ESS/L metric is computed w.r.t.~different variable blocks. For the GMM we additionally report the inclusive KL (Equation~\ref{eq:variational_objective}) for each block.}
-%     \begin{subtable}{.45\linewidth}
-%     \centering
-%     \caption{GMM}
-%     \vspace{-0.6em}
-%     \begin{tabular}{cc|cccc}
-     
-%     \toprule
-%          & 
-%         \multicolumn{3}{c}{ESS/L} &
-%         \multicolumn{2}{c}{$\mathrm{KL}(p_\q || q_\f)$}\\
-%       & \{$\tau, \mu, c$\} & \{$\tau, \mu$\} & \{$c$\} &\{$\tau, \mu$\}  & \{$c$\} \\
-%     \midrule
-%      RWS & -- & 0.001 & --& -- & -- \\
-%      APG (K=5)  & 0.261 & 0.980 &  0.631 & 0.005 & 0.005
-% \\
-%      APG (K=10)  & 0.398 & 0.981  & 0.760
-%      & 0.004 & 0.004
-%      \\
-%      APG (K=15)  & 0.416 & 0.983 & 0.780 & 0.003 & 0.004\\
-%     \bottomrule
-%     \end{tabular}   
-%     \label{table-gmm}
-%     \end{subtable}%
-%     \begin{subtable}{.7\linewidth}
-%     \centering
-%     \caption{DGMM}
-%     \vspace{-0.6em}
-%     \begin{tabular}{c|cc}
-%     \toprule
-%          \multicolumn{3}{c}{ESS/L} \\
-%     \{$\mu, c, \alpha $\}& \{$\mu$\} & \{$c, \alpha$\}\\
-%     \midrule
-%     0.001 & -- & -- \\
-%      0.002 & 0.013 & 0.422 \\
-%      0.002 & 0.019 & 0.454 \\
-%      0.003 & 0.025 & 0.488 \\
-%     \bottomrule
-%     \end{tabular}
-%     \label{table-dgmm}
-%     \end{subtable}
-%     \label{table-both-mm}
-% \end{table*}
-Results on each of these tasks constitute a significant advance relative to the state of the art. Standard VAEs perform poorly at Gaussian mixture modeling tasks, and to our knowledge there are no existing methods that scale to a problem of the complexity of the DGMM for rings. In the context of the unsupervised tracking model, APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. APG is not only is able to scale to models with higher complexity in these settings, but also provides a general framework for performing inference in models with global and local variables, which can be adapted to a variety of model classes with comparative ease.
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
-  \caption{Comparison with baselines}
+  \caption{Comparison with baselines.}
   \label{fig:convergence-gmm}
 \end{figure}
+
+
+
+Results on each of these tasks constitute a significant advance relative to the state of the art. Standard VAEs perform poorly at Gaussian mixture modeling tasks, and to our knowledge there are no existing methods that scale to a problem of the complexity of the DGMM for rings. In the context of the unsupervised tracking model, APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. APG is not only is able to scale to models with higher complexity in these settings, but also provides a general framework for performing inference in models with global and local variables, which can be adapted to a variety of model classes with comparative ease.
+
 
 \subsection{Gaussian Mixture Model}
 \label{sec:gmm}
@@ -777,7 +662,12 @@ We employ a variational distribution that updates the global variables $q_\f(\mu
 We train our models on 20,000 datasets with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.1$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations.
 
 We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
-
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/gmm_blocks_comparison.pdf}
+  \caption{Analysis with different block strategies under the same computation budget.}
+  \label{fig:convergence-gmm}
+\end{figure}
 Figure \ref{samples-gmm} shows sequences of single samples from the variational distribution, where the first sample is drawn using RWS. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG sampler typically converges within 12 iterations across a range of dataset sizes.
 
 Furthermore, we would like to quantify how similar learned proposals $q_\f(z_b \mid x, z_{-b})$ are to the conditional posteriors $p_\q(z_b \mid x, z_{-b})$. With the case of GMM where the exact conditional posterior is tractable, we verify the convergence of the learned proposals by computing the inclusive KL divergence $\mathcal{K}_b(\f)$ defined in equation ~\ref{eq:variational_objective} (see Table \ref{table-gmm}). We can see that the APG samplers of the both $\{\tau, \mu\}$ and $\{c\}$ converge to the true conditional posterior.
@@ -791,6 +681,24 @@ Furthermore, we would like to quantify how similar learned proposals $q_\f(z_b \
 %   \caption{APG sampler performance as a function of number of sweeps $K$ for a constant sample budget $K \cdot L = 1000$.\\ \textbf{Top}: Log joint $\log p_\q(\x ,\z)$. \textbf{Bottom}: ESS / L.}
 %   \label{fig:budget}
 % \end{figure}
+\subsection{Sample Quality Evaluation}
+In both GMM, we compute the log-joint distribution $\log p_\q(\x, z)$ (see Table \ref{table-both-mm}) as a function of sweep iteration to measure the convergence and the effective sample size (see Table \ref{table-both-mm}) to assess proposal quality
+\begin{align}
+\label{ess-eq}
+    \frac{\text{ESS}}{L} 
+    = 
+    \frac{(\sum_{l=1}^L w^{k,l})^2}
+         {L \sum_{l=1}^L (w^{k,l})^2}
+    .
+\end{align}
+
+
+\textbf{Log joint} $\log p_\q(\x, z)$. Because the marginal $q_\f(z^k | x)$ is intractable, it is difficult to compute an lower bound or upper bound at each sweep. Here we compute the log joint in each test dataset for both the APG sampler with different number of sweeps and the RWS baselines and report the differences on average to see how much more is achieved by the APG sampler. In both models, the APG sampler gains a higher log joint compared with the encoder trained by RWS.
+
+\textbf{ESS}. One advantage of the APG sampler that it decomposes a high dimensional sampling problem into a sequence of lower dimensional sampling problems. To show that, we compute the ESS when 1) we resample only after one sweep and 2) we resample after each block update. WE can see that the granular sampling strategy significantly improves the ESS in both cases.
+
+\subsection{Fixed Computation Budget Analysis}
+As a mean of comparing the performance of APG samplers for varying numbers of sweeps $K$, we perform an experiment in which the computation budget is fixed at $K \cdot L = 1000$ samples. Figure~\ref{fig:budget} shows $\log p_\theta(x, z)$ and ESS/L. The shaded area denotes the standard deviation over 10 runs that each comprise 5 datasets that were chosen at random. We can see that it in general, it is more effective to perform more APG sweeps $K$ with a smaller number of particles $L$, that it is to increase the particle budget. 
 
 \subsection{Deep Generative Mixture Model}
 We next consider the task of training a deep generative model $p_\q(\x, \z)$ is jointly with the APG sampler. Our dataset consists of ring-shaped clusters. The true generative model (which we assume is unknown) takes the form
@@ -834,43 +742,55 @@ Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and a
   \caption{Inferred digit trajectories (top) and reconstructions (bottom) for test dataset with $D = 5$ digits and $T = 15$ time steps.}
   \label{mnist-qualitative}
 \end{figure*}
-\begin{table}[t!]
-    \centering
-    \caption{$\log p_\q (x, z)$ and mean squared error on BMNIST test set with different methods.}
-    \begin{tabular}{ccc}
-     
-    \toprule
-         & $\log p_\q (x, z)$ & MSE \\
+% \begin{table*}[t!]
+% \centering
+% \caption{$\log p_\q (x, z)$}
+% \begin{tabular}{ccccccccccccc}
+% \toprule
+%      & RWS & \multicolumn{2}{c}{HMC} & \multicolumn{2}{c}{HMC5x} & \multicolumn{2}{c}{HMC10x} & BPS & \multicolumn{3}{c}{APG} & Gibbs \\
+%      & & K=10 & K=20 & K=10 & K=20 & K=10 & K=20 & K=20 & K=5 & K=10 & K=20 & K=20 \\
+%     \midrule
+%     GMM & -765.13 & -675.34 & -659.45 & -593.17 & -542.01 & -500.74 & -467.3 & -668.89 & -481.65 & -455.66 & -446.91 & -457.33 \\
+%     DGMM & -5974.6 & --& -- & -- & -- & -2546.9 & -- & -3428.2 & -2491.2 & -2484.1 & -2481.6 & -- \\
+%     DGMM & -3172.0 & & & & & -2184.9 &  & -4204.5 & -2050.4 & -2040.2 & -2035.1 & -- \\
+%     % BMNIST & -- & --& -- & -- & -- & --\\
+%     \bottomrule
+% \end{tabular}
+% \end{table*}
+\begin{table*}[t!]
+\centering
+\caption{$\log p_\q (x, z)$}
+\begin{tabular}{cccccccccc}
+\toprule
+     & RWS & HMC1x & HMC5x & HMC10x & BPS & \multicolumn{3}{c}{APG} & GIBBS \\
+     & & K=20 & K=20 & K=20 & K=20 & K=5 & K=10 & K=20 & K=20 \\
     \midrule
-        VAE & -- & -- \\
-        APG & -- & -- \\
-        HMC & -- & -- \\
-        BPS & -- & -- \\
+    GMM & -765.13 & -659.45 & -542.01 & -467.3 & -668.89 & -481.65 & -455.66 & -446.91 & -457.33 \\
+    DGMM & -3172.0 & -2184.9 & -2184.2 & -2184.0 & -4204.5 & -2050.4 & -2040.2 & -2035.1 & -- \\
+    % BMNIST & -- & --& -- & -- & -- & --\\
     \bottomrule
-    \end{tabular}   
-\end{table}
+\end{tabular}
+\end{table*}
+% \begin{table}[t!]
+%     \centering
+%     \caption{$\log p_\q (x, z)$ and mean squared error on BMNIST test set with different methods.}
+%     \begin{tabular}{ccc}
+     
+%     \toprule
+%          & $\log p_\q (x, z)$ & MSE \\
+%     \midrule
+%         RWS & -- & -- \\
+%         RWS-HMC & -- & -- \\
+%         APG & -- & -- \\
+%         BPS & -- & -- \\
+%     \bottomrule
+%     \end{tabular}   
+% \end{table}
 We train our model on 20,000 datasets with $N = 200$ data points and $I = 4$ clusters with fixed hyperparameters ($\sigma_0 = 3.5$, $\Sigma_{\epsilon} = 0.2$). We use $20$ datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
 
 Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{samples-dgmm} shows individual samples analogous to the ones in Figure~\ref{samples-gmm}. The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
 
-\subsection{Sample Quality Evaluation}
-In both mixture models, we compute the log-joint distribution $\log p_\q(\x, z)$ (see Table \ref{table-both-mm}) as a function of sweep iteration to measure the convergence and the effective sample size (see Table \ref{table-both-mm}) to assess proposal quality
-\begin{align}
-\label{ess-eq}
-    \frac{\text{ESS}}{L} 
-    = 
-    \frac{(\sum_{l=1}^L w^{k,l})^2}
-         {L \sum_{l=1}^L (w^{k,l})^2}
-    .
-\end{align}
 
-
-\textbf{Log joint} $\log p_\q(\x, z)$. Because the marginal $q_\f(z^k | x)$ is intractable, it is difficult to compute an lower bound or upper bound at each sweep. Here we compute the log joint in each test dataset for both the APG sampler with different number of sweeps and the RWS baselines and report the differences on average to see how much more is achieved by the APG sampler. In both models, the APG sampler gains a higher log joint compared with the encoder trained by RWS.
-
-\textbf{ESS}. One advantage of the APG sampler that it decomposes a high dimensional sampling problem into a sequence of lower dimensional sampling problems. To show that, we compute the ESS when 1) we resample only after one sweep and 2) we resample after each block update. WE can see that the granular sampling strategy significantly improves the ESS in both cases.
-
-\subsection{Fixed Computation Budget Analysis}
-As a mean of comparing the performance of APG samplers for varying numbers of sweeps $K$, we perform an experiment in which the computation budget is fixed at $K \cdot L = 1000$ samples. Figure~\ref{fig:budget} shows $\log p_\theta(x, z)$ and ESS/L. The shaded area denotes the standard deviation over 10 runs that each comprise 5 datasets that were chosen at random. We can see that it in general, it is more effective to perform more APG sweeps $K$ with a smaller number of particles $L$, that it is to increase the particle budget. 
 
 \subsection{Time Series Model -- Bouncing MNIST}
 Finally, we apply the APG sampler to a time series model that is trained with short timescales, and evaluate its performance with longer timescales and larger numbers of latent variables.
