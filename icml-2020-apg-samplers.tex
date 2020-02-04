@@ -185,26 +185,51 @@ Amortized variational methods have proven difficult to scale to structured probl
 
 \label{introduction}
 
-Deep probabilistic programming libraries such as Edward \cite{tran2016edward}, Pyro \cite{bingham2018pyro}, and Probabilistic Torch \cite{siddharth2017learning}  extend deep learning frameworks with functionality for deep probabilistic models which combine a generative model with an inference model that approximates the Bayesian posterior.
-Both models are parameterized using neural networks, which are trained using stochastic gradient descent by optimize a lower or upper bound on the log marginal likelihood. Training an inference network to perform amortized inference can be equivalently understood as a form of variational inference or adaptive importance sampling.
+% Deep probabilistic programming libraries such as Edward \cite{tran2016edward}, Pyro \cite{bingham2018pyro}, and Probabilistic Torch \cite{siddharth2017learning}  extend deep learning frameworks with functionality for deep probabilistic models which combine a generative model with an inference model that approximates the Bayesian posterior.
+% Both models are parameterized using neural networks, which are trained using stochastic gradient descent by optimize a lower or upper bound on the log marginal likelihood. Training an inference network to perform amortized inference can be equivalently understood as a form of variational inference or adaptive importance sampling.
 
-At present, deep probabilistic models most commonly have the form of standard variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In these architectures, the  generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by an expressive neural network, often referred to as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code.
+At present, deep probabilistic models most commonly have the form of standard variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In these architectures, the  generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by an neural network, often referred to as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code.
+Training these inference network to perform amortized inference can be equivalently understood as a form of adaptive importance sampling which gradually refines a variational proposal.
 
 Deep probabilistic programming aims to enable more general designs that incorporate structured priors for tasks such as multiple object detection \cite{eslami2016attend}, language modeling \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. In these domains, a prior can incorporate useful inductive biases, such as the requirement that object trajectories are smooth. These biases in turn can help guide a model to uncover patterns in the data in an unsupervised manner, and aid generalization in complex domains where the training data may not contain exemplars for all possible combinations of latent features.
 
-However, training structured models also poses challenges that are not encountered in unstructured problems. To optimize a lower or an upper bound, we need to approximate the gradient of an expectation with a Monte Carlo estimate (see \cite{mohamed2019monte} for a recent review). Standard VAEs rely on reparameterized estimators that can often approximate the gradient with a single sample. Unfortunately, these estimators can have a high variance in models where latent variables are high-dimensional and/or strongly correlated. Owing to these limitations, models that are trained using standard VAE objectives often consider relatively small-scale problems, such as tracking $\le 2$ objects over the course of 10 frames \cite{kosiorek2018sequential}, or assigning $\le 10$ sentences in a review to distinct aspects \cite{esmaeili2019structured}. 
+%TODO: Needs reading
+However, training structured models also poses challenges that are not encountered in unstructured problems. Standard VAEs rely on reparameterized gradient estimators that can often approximate the gradient with a single sample. Structured models are often inherently difficult to reparameterize, e.g. they may involve discrete structures which need to be relaxed in order to compute pathwise derivatives. A more general approach is to approximate the gradient of an expectation with a Monte Carlo estimate (see \cite{mohamed2019monte} for a recent review). 
+Unfortunately, these estimators can have a high variance in models where latent variables are high-dimensional and/or strongly correlated. Owing to these limitations, models that are trained using standard VAE objectives often consider relatively small-scale problems, such as tracking $\le 2$ objects over the course of 10 frames \cite{kosiorek2018sequential}, or assigning $\le 10$ sentences in a review to distinct aspects \cite{esmaeili2019structured}. 
 
-In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. We are particularly interested in the frequently arising cases of models that  are characterized by a combinations of \emph{local variables}, such as the time-dependent position of an object, and \emph{global variables}, such as the shape of the object. In this type of model, it is often the case that knowledge of the local variables can help us make predictions about global variables and vice versa; If we know the shape of an object, then it should be easier to identify its location in an image. Conversely, if we know the position of an object in each frame, then we can more readily infer its shape.
+% In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. 
+% We are particularly interested in the frequently arising cases of models that are characterized by a combinations of \emph{local variables}, such as the time-dependent position of an object, and \emph{global variables}, such as the shape of the object. In this type of model, it is often the case that knowledge of the local variables can help us make predictions about global variables and vice versa; If we know the shape of an object, then it should be easier to identify its location in an image. Conversely, if we know the position of an object in each frame, then we can more readily infer its shape.
 
-The methods that we develop in this paper are similar in spirit to work by Johnson et al.~\cite{johnson2016composing}, who developed methods for  conjugate-exponential models with a neural likelihood. In this setting, we can perform inference using variational expectation maximization (EM) algorithms \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that exploit conjugacy and conditional independence to derive closed-form updates to blocks of variables. The advantage of these approaches is that they are highly computationally efficient; variational EM can often converge in a small number of iterations and easily scales to much larger number of variables. Unfortunately, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
+In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. These methods are similar in spirit to work by Johnson et al.~\cite{johnson2016composing}, who developed methods for  conjugate-exponential models with a neural likelihood. In this setting, we can perform inference using variational expectation maximization (EM) algorithms \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that exploit conjugacy and conditional independence to derive closed-form updates to blocks of variables. The advantage of these approaches is that they are highly computationally efficient; variational EM can often converge in a small number of iterations and easily scales to much larger number of variables. Unfortunately, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
 
-To overcome the limitations imposed by conjugate-exponential family models, we here develop a more general approach. Rather than requiring exact EM updates we develop an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we define a a variational method that minimizes the inclusive KL divergence between the proposal update and the exact conditional posterior. We refer to the resulting class of methods as \emph{amortized Gibbs} samplers, since the proposals approximate Gibbs updates.
+To overcome the limitations imposed by conjugate-exponential family models, we here develop a more general approach. Rather than requiring exact EM updates we develop an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we define minimize the inclusive KL divergence w.r.t. the exact conditional posterior. We refer to the resulting class of methods as \emph{amortized population Gibbs} samplers, since the proposals approximate Gibbs updates.
 
-The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can nonetheless derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
+The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
 
-One of the challenges in designing networks that parameterize conditional proposals is network outputs need to appropriately account for the amount of data on which we are conditioning; The conditional posterior on the mean for a cluster with a large number of points is more tightly peaked than that of a cluster with a small number of points. To address this difficulty, we propose a class of networks that we refer to as \emph{neural sufficient statistics}, which define parameterizations of proposals in a manner that is additive in the local variables, much like the sufficient statistics in conjugate-exponential families.
+One of the challenges in designing networks that parameterize conditional proposals is network outputs need to appropriately account for the amount of data on which we are conditioning; The conditional posterior on the mean for a cluster with a large number of points is more tightly peaked than that of a cluster with a small number of points. To address this, we propose a class of networks that we refer to as \emph{neural sufficient statistics}, which are parameterized in a manner that is additive in the local variables, much like the sufficient statistics in conjugate-exponential families.
 
 Our experiments show that learned proposals converge to the true conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that amortized Gibbs methods serve as a basis for scalable inference in structured deep generative models, including mixtures with neural likelihoods and unsupervised tracking models. Both of these tasks are representative of the current state-of-the art in unsupervised approaches for learning structured deep generative models.
+
+% Deep probabilistic programming libraries such as Edward \cite{tran2016edward}, Pyro \cite{bingham2018pyro}, and Probabilistic Torch \cite{siddharth2017learning}  extend deep learning frameworks with functionality for deep probabilistic models which combine a generative model with an inference model that approximates the Bayesian posterior.
+% Both models are parameterized using neural networks, which are trained using stochastic gradient descent by optimize a lower or upper bound on the log marginal likelihood. Training an inference network to perform amortized inference can be equivalently understood as a form of variational inference or adaptive importance sampling.
+
+% At present, deep probabilistic models most commonly have the form of standard variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In these architectures, the  generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by an expressive neural network, often referred to as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code.
+
+% Deep probabilistic programming aims to enable more general designs that incorporate structured priors for tasks such as multiple object detection \cite{eslami2016attend}, language modeling \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. In these domains, a prior can incorporate useful inductive biases, such as the requirement that object trajectories are smooth. These biases in turn can help guide a model to uncover patterns in the data in an unsupervised manner, and aid generalization in complex domains where the training data may not contain exemplars for all possible combinations of latent features.
+
+% However, training structured models also poses challenges that are not encountered in unstructured problems. To optimize a lower or an upper bound, we need to approximate the gradient of an expectation with a Monte Carlo estimate (see \cite{mohamed2019monte} for a recent review). Standard VAEs rely on reparameterized estimators that can often approximate the gradient with a single sample. Unfortunately, these estimators can have a high variance in models where latent variables are high-dimensional and/or strongly correlated. Owing to these limitations, models that are trained using standard VAE objectives often consider relatively small-scale problems, such as tracking $\le 2$ objects over the course of 10 frames \cite{kosiorek2018sequential}, or assigning $\le 10$ sentences in a review to distinct aspects \cite{esmaeili2019structured}. 
+
+% In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. We are particularly interested in the frequently arising cases of models that  are characterized by a combinations of \emph{local variables}, such as the time-dependent position of an object, and \emph{global variables}, such as the shape of the object. In this type of model, it is often the case that knowledge of the local variables can help us make predictions about global variables and vice versa; If we know the shape of an object, then it should be easier to identify its location in an image. Conversely, if we know the position of an object in each frame, then we can more readily infer its shape.
+
+% The methods that we develop in this paper are similar in spirit to work by Johnson et al.~\cite{johnson2016composing}, who developed methods for  conjugate-exponential models with a neural likelihood. In this setting, we can perform inference using variational expectation maximization (EM) algorithms \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that exploit conjugacy and conditional independence to derive closed-form updates to blocks of variables. The advantage of these approaches is that they are highly computationally efficient; variational EM can often converge in a small number of iterations and easily scales to much larger number of variables. Unfortunately, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
+
+% To overcome the limitations imposed by conjugate-exponential family models, we here develop a more general approach. Rather than requiring exact EM updates we develop an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we define a a variational method that minimizes the inclusive KL divergence between the proposal update and the exact conditional posterior. We refer to the resulting class of methods as \emph{amortized Gibbs} samplers, since the proposals approximate Gibbs updates.
+
+% The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can nonetheless derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
+
+% One of the challenges in designing networks that parameterize conditional proposals is network outputs need to appropriately account for the amount of data on which we are conditioning; The conditional posterior on the mean for a cluster with a large number of points is more tightly peaked than that of a cluster with a small number of points. To address this difficulty, we propose a class of networks that we refer to as \emph{neural sufficient statistics}, which define parameterizations of proposals in a manner that is additive in the local variables, much like the sufficient statistics in conjugate-exponential families.
+
+% Our experiments show that learned proposals converge to the true conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that amortized Gibbs methods serve as a basis for scalable inference in structured deep generative models, including mixtures with neural likelihoods and unsupervised tracking models. Both of these tasks are representative of the current state-of-the art in unsupervised approaches for learning structured deep generative models.
 
 \section{Amortized Population Gibbs Samplers}
 \label{sec:amortized-gibbs}
@@ -324,16 +349,17 @@ In problems where we would like to learn a deep generative model $p_\q(\x, \z)$,
 \end{align}
 This identity holds due to the standard property $\E_{p_\q(z|x)}[\nabla_\q \log p_\q(z|x)]=0$ (see Appendix \ref{appendix:grad-theta} for details). 
 
-The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the self-normalized estimator in reweighted wake-sleep methods \cite{bornschein2014reweighted}, which also minimizes an inclusive KL divergence. This estimator has a number of advantages over the estimator that is commonly used to train standard VAEs, which minimize an exclusive KL divergence \cite{le2019revisiting}. Standard VAE objectives rely on reparameterization to compute gradient estimates. For discrete variables, reparameterization is not possible. This means that we need to compute likelihood-ratio estimators (also known as REINFORCE-style estimators \cite{williams1992simple}), which can have very high variance. A range of approaches for variance reduction have been put forward, including continuous relaxations that are amenable to reparameterization \cite{maddison2017concrete,jang2017categorical}, credit assignment techniques (see \cite{weber2019credit} for a review), and other control variates \cite{mnih2016variational,tucker2017rebar,grathwohl2018backpropagation}. 
+The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the self-normalized estimator in reweighted wake-sleep (RWS) methods \cite{bornschein2014reweighted}, which also minimizes an inclusive KL divergence. This estimator has a number of advantages over the estimator that is commonly used to train standard VAEs, which minimize an exclusive KL divergence \cite{le2019revisiting}. Standard VAE objectives rely on reparameterization to compute gradient estimates. For discrete variables, reparameterization is not possible. This means that we need to compute likelihood-ratio estimators (also known as REINFORCE-style estimators \cite{williams1992simple}), which can have very high variance. A range of approaches for variance reduction have been put forward, including continuous relaxations that are amenable to reparameterization \cite{maddison2017concrete,jang2017categorical}, credit assignment techniques (see \cite{weber2019credit} for a review), and other control variates \cite{mnih2016variational,tucker2017rebar,grathwohl2018backpropagation}. 
 
 The estimator in Equation~\ref{eq:grad-self-normalized} sidesteps the need for these variance reduction techniques. To compute this gradient, we only require that the proposal \emph{density} is differentiable, whereas reparameterized estimators require that the \emph{sample} itself is differentiable. This is a milder condition, that holds for most distributions of interest, including those over discrete variables. Moreover, since this estimator minimizes the inclusive KL divergence, and not the exclusive KL divergence, there is smaller risk of learning a proposal that collapses to a single mode of a multi-modal posterior \cite{le2019revisiting}.
 
 \subsection{Generating High Quality Samples}
-Approximating the gradient presents a chicken-and-egg problem; we need samples from the posterior to compute a Monte Carlo estimate of the gradient, but generating these samples is precisely what we are hoping to use learned proposals for in the first place. Moreover, self-normalized importance samplers are consistent, but they are not unbiased. In the early stages of training, we will have poor quality proposals, which means that the bias of the gradient estimators in Equations~\ref{eq:grad-self-normalized} and~\ref{eq:grad-theta} can be high. 
-%If we can improve the quality of the importance sampling mechanism, regardless of the quality of the proposal, then this will improve accuracy of both inference and gradient estimation.
-%may not be able to compute high-quality gradient estimates until we have good proposals, but we will not be able to learn the proposals without high-quality gradient estimates.
+Reweighted wake-sleep methods (or standard VAEs) is difficult to structured problems.  
 
-Standard reweighted wake-sleep methods generate proposals from an encoder $z \sim q_\f(z \mid x)$ and compute weights $w = p_\q(x, z) / q_\f(z \mid x)$. A well-known limitation of this type of naive importance sampling strategy is that the computed weights will have a very high variance in models with high-dimensional and/or correlated latent variables, which in turn implies a high bias of the estimator. There is a very broad class of importance sampling strategies that can be employed to reduce the variance of importance weights. If we replace the naive importance sampler in reweighted wake-sleep with a more sophisticated sampling strategy, then this both improves the quality of gradient estimates at training, and the quality of inference results at test time.
+% Approximating the gradient presents a chicken-and-egg problem; we need samples from the posterior to compute a Monte Carlo estimate of the gradient, but generating these samples is precisely what we are hoping to use learned proposals for in the first place. Moreover, self-normalized importance samplers are consistent, but they are not unbiased. In the early stages of training, we will have poor quality proposals, which means that the bias of the gradient estimators in Equations~\ref{eq:grad-self-normalized} and~\ref{eq:grad-theta} can be high. 
+
+% Standard reweighted wake-sleep methods generate proposals from an encoder $z \sim q_\f(z \mid x)$ and compute weights $w = p_\q(x, z) / q_\f(z \mid x)$. A well-known limitation of this type of naive importance sampling strategy is that the computed weights will have a very high variance in models with high-dimensional and/or correlated latent variables, which in turn implies a high bias of the estimator. There is a very broad class of importance sampling strategies that can be employed to reduce the variance of importance weights. If we replace the naive importance sampler in reweighted wake-sleep with a more sophisticated sampling strategy, then this both improves the quality of gradient estimates at training, and the quality of inference results at test time.
+
 
 To improve upon standard reweighted wake-sleep methods, we will use the learned proposals to define a sequential Monte Carlo (SMC) sampler \cite{delmoral2006sequential}. %SMC methods reduce the variance of importance weights by decomposing a high-dimensional sampling problem into a sequence of lower-dimensional problems \cite{}. 
 SMC methods \cite{doucet2001sequential} combine two basic ideas. The first is sequential importance sampling, which decomposes a proposal for a sequence of variables into a sequence of conditional proposals. The second is resampling, which selects partial proposals with probability proportional to their weights in order to improve the overall sample quality. Most commonly, SMC methods are used in the context of state space models to generate proposals for a sequence of variables by proposing one variable at a time. SMC \emph{samplers} (see  Algorithm~\ref{alg:smcs}) are a subclass of SMC methods that interleave resampling with the application of a transition kernel, which is sometimes also referred to as \emph{resample-move} SMC. 
@@ -421,9 +447,13 @@ When the approximate Gibbs kernel converges to the actual Gibbs kernel, this cho
 \end{align*}
 \textbf{Resampling}. In general, the weights $w^k$ in the sequential importance sampling scheme defined above will have a high variance. The weights $w^1$ are just normal importance sampling weights, which themselves will have a high variance when $z$ is high-dimensional, or there are correlations between variables. Moreover, we are now sampling these same variables $k$ times. When the approximate Gibbs kernel converges to the true kernel, this will not increase the variance of weights (since $v^k=1$ in this limit), but during training variance of weights $w^k$ will increase with $k$, since we are now jointly sampling an entire Markov chain.
 
-To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step (see Appendix~\ref{appendix:resample-algo}). This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight. Concretely, suppose that we have a set \emph{incoming} samples $\{(w^{k,l}, z^{k,l})\}_{l=1}^L$, then the resampling procedure (see Algorithm~\ref{alg:resample}) selects index $a$ with probability $P(a\!=\!l) = w^{k,l} / \sum_{l'} w^{k,l'}$ and returns an outgoing sample $z'^{k,l} = z^{k,a}$ whose $w'^{k,l} = \frac{1}{L} \sum_l w^{k,l}$ is equal to the average weight. The reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
+To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step. This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight.
+% Concretely, suppose that we have a set \emph{incoming} samples $\{(w^{k,l}, z^{k,l})\}_{l=1}^L$, then the resampling procedure (see Algorithm~\ref{appendix:resample-algo}) selects index $a$ with probability $P(a\!=\!l) = w^{k,l} / \sum_{l'} w^{k,l'}$ and returns an outgoing sample $z'^{k,l} = z^{k,a}$ whose $w'^{k,l} = \frac{1}{L} \sum_l w^{k,l}$ is equal to the average weight. 
+The multinomial resampler (see Appendix~\ref{appendix:resample-algo}) reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
 
-When we perform resampling after each sweep, we reduce the variance of importance weights to an extent. However we will likely still have high-variance weights, since each sample from the approximate Gibbs kernel still constitutes a high-dimensional proposal over all variables in the model. To further reduce the variance, we will employ resampling after each block update, rather than after each sweep. Because the incoming weights are now equal at each block update, we can compute gradient estimates using incremental weights $v$ of the form
+To prevent from this diversity reduction, we instead perform the systematic resampling~\cite{murray2012gpu} (see Appendix~\ref{appendix:resample-algo}). 
+% When we perform resampling after each sweep, we reduce the variance of importance weights to an extent. However we will likely still have high-variance weights, since each sample from the approximate Gibbs kernel still constitutes a high-dimensional proposal over all variables in the model. To further reduce the variance, we will employ resampling after each block update, rather than after each sweep. Because the incoming weights are now equal at each block update, we can compute gradient estimates using incremental weights $v$ of the form 
+In APG sampler we will employ resampling after each block update $z_b\sim q_\phi(z_b | x, z_{-b})$. Because the incoming weights are now equal at each block update, we can compute gradient estimates using incremental weights $v$ of the form
 \begin{align}
     v
     = 
@@ -431,7 +461,7 @@ When we perform resampling after each sweep, we reduce the variance of importanc
          {p_\q(x, z_b, z_{-b}) \: q_\f(z'_b \mid  x, z_{-b})}
     .
 \end{align}
-These incremental weights will have a much lower variance than the incremental weights for a full sweep, since we are now able to decompose a sampling problem for all the variables in a model into sampling problems for individual blocks. In models with many latent variables, such as the ones that we will consider in our experiments, this has the potential to greatly increase the tractability of the gradient estimation problem. 
+These incremental weights will have a much lower variance than the weights $w^k$, since we are now able to decompose a sampling problem for all the variables in a model into sampling problems for individual blocks. In models with many latent variables, such as the ones that we will consider in our experiments, this has the potential to greatly increase the tractability of the gradient estimation problem. 
 
 
 We refer to this implementation of a SMC sampler as an amortized population Gibbs (APG) sampler, and summarize all the steps of the computation in Algorithm~\ref{alg:amortized-gibbs}. In Appendix~\ref{appendix:proof-algo}, we prove that this algorithm is correct using an argument based on proper weighting. More informally this property holds due to the fact that this sampler is a specific instance of a SMC sampler. 
@@ -541,59 +571,25 @@ A particularly useful case arises in models where the data $\x = \{x_1, \ldots, 
     \lambda^\textsc{l}_n + T^\textsc{l}_\f(\x_n, \z^\textsc{g}).
 \end{align*}
 The advantage of this parameterization is it allows us to train approximate Gibbs updates for global variables in a manner that scales dynamically with the size of the dataset, and appropriately adjusts the posterior variance according to the amount of available data.
-% \begin{figure*}[t!]
-% \centering
-%   \includegraphics[width=2\columnwidth]{figures/gmm_samples_and_baselines.pdf}
-% \end{figure*}
-% \begin{figure*}[t!]
-%   \centering
-%   \begin{subfigure}[t]{0.5\textwidth}
-%   \includegraphics[width=85mm]{figures/gmm_samples.pdf}
-%   \vspace*{-1mm}
-%   \caption{GMM}
-%   \label{samples-gmm}
-%   \vspace{-1ex}
-%   \end{subfigure}%
-%   \begin{subfigure}[t]{0.5\textwidth}
-%   \includegraphics[width=85mm]{figures/dgmm_samples.pdf}
-%   \vspace*{-1mm}
-%   \caption{DGMM}
-%   \label{samples-dgmm}
-%   \vspace{-1ex}
-%   \end{subfigure}
-%   \caption{Single samples in both (\textbf{a}) GMM and (\textbf{b}) DGMM. The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
-%   \label{samples-mixture}
-% \end{figure*}
-
-
-
-% \begin{figure}[t!]
-% \centering
-% \includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
-%   \caption{Comparison with baselines}
-%   \label{fig:convergence-gmm}
-% \end{figure}
-
-% \begin{figure}[t!]
-%   \centering
-%   \begin{subfigure}[t]{0.5\columnwidth}
-%   \includegraphics[width=40mm]{figures/heatmap_log_joint_gmm.pdf}
-%   \vspace*{-1mm}
-%   \caption{GMM}
-%   \label{fig:heatmap-gmm}
-%   \vspace{-1ex}
-%   \end{subfigure}%
-%   \begin{subfigure}[t]{0.5\columnwidth}
-%   \includegraphics[width=40mm]{figures/heatmap_log_joint_dgmm.pdf}
-%   \vspace*{-1mm}
-%   \caption{DGMM}
-%   \label{fig:heatmap-dgmm}
-%   \vspace{-1ex}
-%   \end{subfigure}
-%   \caption{Heatmap of $\log p_\theta(x, z)$ (the test sets in Figure~\ref{samples-mixture}) with different combinations of number of APG sweeps $K$ and number of particles $L$. The main diagonal elements (highlighted by green boxes) are results under same computation budget $K \cdot L = 1000$.}
-%   \label{fig:heatmap-both}
-% \end{figure}
-
+\begin{figure*}[t!]
+  \centering
+  \begin{subfigure}[t]{0.5\textwidth}
+  \includegraphics[width=85mm]{figures/gmm_samples.pdf}
+  \vspace*{-1mm}
+  \caption{GMM}
+  \label{fig:samples-gmm}
+  \vspace{-1ex}
+  \end{subfigure}%
+  \begin{subfigure}[t]{0.5\textwidth}
+  \includegraphics[width=85mm]{figures/dgmm_samples.pdf}
+  \vspace*{-1mm}
+  \caption{DGMM}
+  \label{fig:samples-dgmm}
+  \vspace{-1ex}
+  \end{subfigure}
+  \caption{Single samples in both (\textbf{a}) GMM and (\textbf{b}) DGMM. The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates. The right column in (\textbf{b}) DGMM additionally shows reconstructions from the learned generative model.}
+  \label{fig:samples-mixture}
+\end{figure*}
 \section{Related Work}
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{ marino2018iterative}. Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. Work by  Hoffman~\cite{hoffman2017learning} applies Hamiltonian Monte Carlo to samples that are generated from the encoder, which serves to improve the gradient estimate w.r.t.~$\theta$ (Equation~\ref{eq:grad-theta}), while learning the inference network using a standard reparameterized ELBO objective. 
 % Li et al.~\cite{li2017approximate} consider learning an inference network which is used for initializing an MCMC chain. They focus on a setting where the density of the inference network cannot be evaluated.
@@ -612,23 +608,7 @@ Work by Wang et al.~\cite{wang2018meta} develops a meta-learning approach to lea
 
 \section{Experiments}
 \label{sec:experiments}
-
 We evaluate APG methods in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned block updates converge the analytical conditional posteriors as predicted by our analysis in Section~\ref{sec:amortized-gibbs}. We next consider a deep generative mixture model (DGMM) that incorporates a neural likelihood to parameterize ring-shaped clusters. We show that we can train both the generative model and inference model in an end-to-end manner using APG methods, and that inference scales to datasets containing up to 600 points. For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint. In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by Srivastava et al.~\cite{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking.
-
-\begin{figure}[t!]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/gmm_samples.pdf}
-  \vspace*{-1mm}
-  \label{samples-gmm}
-  \caption{Single samples in GMM . The left column shows one randomly-drawn test dataset, The subsequent columns show inference results by RWS, followed by results after different number of APG updates.}
-\end{figure}
-
-\begin{figure}[t!]
-\centering
-\includegraphics[width=\columnwidth]{figures/convergence_gmm.pdf}
-  \caption{Comparison with baselines.}
-  \label{fig:convergence-gmm}
-\end{figure}
 
 
 
@@ -640,13 +620,13 @@ Results on each of these tasks constitute a significant advance relative to the 
 \vspace{-0.5em}
 To evaluate whether APG samplers can learn the exact Gibbs updates in conditionally conjugate models, we consider a Gaussian mixture model 
 \begin{align*}
-    \mu_i, \tau_i \sim \text{NormGamma}(\mu_0, \nu_0, \alpha_0, \beta_0)
-    , i &=1,2..,I \\
-    c_n \sim \mathrm{Cat}(\pi), 
-    x_n | c_n\!=\!i \sim \text{Norm}(\mu_i, 1 / \tau_i)
-    ,n &=1,2,..,N
+    \mu_i, \tau_i &\sim \text{NormGamma}(\mu_0, \nu_0, \alpha_0, \beta_0)
+    , i =1,2..,I \\
+    c_n &\sim \mathrm{Cat}(\pi), \\
+    x_n | c_n\!=\!i &\sim \text{Norm}(\mu_i, 1 / \tau_i)
+    ,n =1,2,..,N
 \end{align*}
-In this model, the global variables $z^\textsc{g} = \{\mu_{1:I}, \tau_{1:I}\}$ are the mean an precision for each mixture component, whereas the local variables are the cluster assignments $z^\textsc{l} = \{c_{1:N}\}$. Conditioned on cluster assignments, the Gaussian likelihood $p(\x_{1:N} \mid z_{1:N}, \mu_{1:I}, \tau_{1:I})$ is conjugate to a normal-gamma prior $p(\mu_{1:I}, \tau_{1:I})$ with sufficient statistics $T(x_n, c_n)$ 
+In this model, the global variables $z^\textsc{g} = \{\mu_{1:I}, \tau_{1:I}\}$ are the mean and precision for each mixture component, whereas the local variables are the cluster assignments $z^\textsc{l} = \{c_{1:N}\}$. Conditioned on cluster assignments, the Gaussian likelihood $p(\x_{1:N} \mid z_{1:N}, \mu_{1:I}, \tau_{1:I})$ is conjugate to a normal-gamma prior $p(\mu_{1:I}, \tau_{1:I})$ with sufficient statistics $T(x_n, c_n)$ 
 \begin{align*}
     \Big\{\mathrm{I}[c_n \!=\! i], 
         ~\mathrm{I}[c_n \!=\! i] \: x_n, 
@@ -659,57 +639,83 @@ where $\mathrm{I}[z_n \!=\! i]$ is an indicator function that evaluates to 1 if 
 
 We employ a variational distribution that updates the global variables $q_\f(\mu, \tau \mid x, c)$ and the local variables $q_\f(c \mid x, \mu, \tau)$, using point-wise neural sufficient statistics modeled after the ones in the analytical updates (see Appendix \ref{appendix:architecture} for architecture details).
 
-We train our models on 20,000 datasets with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.1$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations.
-
-We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
+We train our models on 20,000 datasets with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.2$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 2.5 \times 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations.
 \begin{figure}[t!]
 \centering
-\includegraphics[width=\columnwidth]{figures/gmm_blocks_comparison.pdf}
-  \caption{Analysis with different block strategies under the same computation budget.}
+\includegraphics[width=\columnwidth]{figures/convergence_gmm_hmc1x.pdf}
+  \caption{Convergence of log joint $\log p(x, z)$ on one GMM test set as a function of number of sweeps. Each method starts from the same 'one-shot' prediction from the encoder trained by RWS.}
   \label{fig:convergence-gmm}
 \end{figure}
-Figure \ref{samples-gmm} shows sequences of single samples from the variational distribution, where the first sample is drawn using RWS. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG sampler typically converges within 12 iterations across a range of dataset sizes.
+% We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/budget_gmm.pdf}
+  \caption{Comparison with 2 different block update strategies by computing $\log p(x, z)$ (left) and ESS (right) as a function of number of sweeps under the same computation budget $K \cdot L = 1000$. Better performance is reached by doing more number of sweeps.}
+  \label{fig:fixed-budget-gmm}
+\end{figure}
+Figure~\ref{fig:samples-gmm} shows a sequence of a single sample from the variational distribution, where the first sample is drawn using RWS. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG sampler typically converges within 12 iterations across a range of dataset sizes.
 
-Furthermore, we would like to quantify how similar learned proposals $q_\f(z_b \mid x, z_{-b})$ are to the conditional posteriors $p_\q(z_b \mid x, z_{-b})$. With the case of GMM where the exact conditional posterior is tractable, we verify the convergence of the learned proposals by computing the inclusive KL divergence $\mathcal{K}_b(\f)$ defined in equation ~\ref{eq:variational_objective} (see Table \ref{table-gmm}). We can see that the APG samplers of the both $\{\tau, \mu\}$ and $\{c\}$ converge to the true conditional posterior.
+Furthermore, we compare the APG sampler with multiple iterative inference methods. Firstly we perform the bootstrapped population sampling (BPS), where we propose $\mu, \tau$ from the prior $p(\mu, \tau)$ instead of $q_\f(\mu, \tau | x, z)$. We run BPS with 100 times as many computation budget as APG sampler. Furthermore, we also consider the Hamiltonian Monte Carlo (HMC) method and true Gibbs sampling method as baselines. HMC is performed for continuous variables $\mu, \tau$ by marginalizing the discrete variables $c$, which is updates by the true Gibbs update $p(c | x, \mu, \tau)$. We run HMC baseline with 1, 5 and 10 times as many computation budget as APG sampler, respectively.
+\begin{figure*}[!h]
+  \centering
+  \includegraphics[width=1.0\textwidth]{figures/bmnist-5digits-samples.pdf}
+%   \vspace*{-5mm}
+%   \caption{5 digits.}
+  \caption{Inferred trajectories (top), sequence reconstructions (bottom) and individual MNIST digit reconstructions (right) on one test set.}
+  \label{mnist-qualitative}
+\end{figure*}
+% \begin{table*}[t!]
+% \centering
+% \caption{$\log p_\q (x, z)$}
+% \begin{tabular}{ccccccccccccc}
+% \toprule
+%      & RWS & \multicolumn{2}{c}{HMC} & \multicolumn{2}{c}{HMC5x} & \multicolumn{2}{c}{HMC10x} & BPS & \multicolumn{3}{c}{APG} & Gibbs \\
+%      & & K=10 & K=20 & K=10 & K=20 & K=10 & K=20 & K=20 & K=5 & K=10 & K=20 & K=20 \\
+%     \midrule
+%     GMM & -765.13 & -675.34 & -659.45 & -593.17 & -542.01 & -500.74 & -467.3 & -668.89 & -481.65 & -455.66 & -446.91 & -457.33 \\
+%     DGMM & -5974.6 & --& -- & -- & -- & -2546.9 & -- & -3428.2 & -2491.2 & -2484.1 & -2481.6 & -- \\
+%     DGMM & -3172.0 & & & & & -2184.9 &  & -4204.5 & -2050.4 & -2040.2 & -2035.1 & -- \\
+%     % BMNIST & -- & --& -- & -- & -- & --\\
+%     \bottomrule
+% \end{tabular}
+% \end{table*}
+\begin{table*}[t!]
+\centering
+\caption{Average log joint $\log p_\q (x, z)$ over all test sets in each experiment. Iterative methods run with $K$ sweeps. }
+\begin{tabular}{cccccccccc}
+\toprule
+     & RWS & BPS & HMC1x & HMC5x & HMC10x & APG & APG & APG & GIBBS \\
+     & & K=20 & K=20 & K=20 & K=20 &  K=5 & K=10 & K=20 & K=20 \\
+    \midrule
+    GMM & -765.13 & -668.89 & -659.45 & -542.01 & -467.3 & -481.65 & -455.66 & -446.91 & -457.33 \\
+    DGMM & -3172.0 & -4204.5 & -2184.9 & -2184.2 & -2184.0 & -2050.4 & -2040.2 & -2035.1 & -- \\
+    BMNIST & -167390 & -188497 & -153850 & -130598 & -120354 & -70605 & -65224 & -62057 & --\\
+    \bottomrule
+\end{tabular}
+\end{table*}
+Because the marginal $q_\f(z^k | x)$ is intractable, it is difficult to compute an lower bound or upper bound at each sweep. Here we compute the log joint different distribution $\log p_\q(\x, z)$ as a function of sweep iteration. We can see that the APG sampler converges much faster even compared with other methods that use more computation budget.
 
-
-% \begin{figure}[t!]
-%   \centering
-%   {\small \hspace{1em}\textsf{\textbf{GMM}}\hspace{10em}\textsf{\textbf{DGMM}}}\\
-%   \includegraphics[width=1.0\linewidth]{figures/both-budget-dot.pdf}
-% %   \vspace*{-3mm}
-%   \caption{APG sampler performance as a function of number of sweeps $K$ for a constant sample budget $K \cdot L = 1000$.\\ \textbf{Top}: Log joint $\log p_\q(\x ,\z)$. \textbf{Bottom}: ESS / L.}
-%   \label{fig:budget}
-% \end{figure}
-\subsection{Sample Quality Evaluation}
-In both GMM, we compute the log-joint distribution $\log p_\q(\x, z)$ (see Table \ref{table-both-mm}) as a function of sweep iteration to measure the convergence and the effective sample size (see Table \ref{table-both-mm}) to assess proposal quality
-\begin{align}
-\label{ess-eq}
+As a mean of comparing the performance of APG samplers for varying numbers of sweeps $K$, we perform an experiment in which the computation budget is fixed at $K \cdot L = 1000$ samples. In addition to log joint $\log p_\theta(x, z)$, we also report the effective sample size to assess proposal quality 
+\begin{align*}
+% \label{ess-eq}
     \frac{\text{ESS}}{L} 
     = 
     \frac{(\sum_{l=1}^L w^{k,l})^2}
          {L \sum_{l=1}^L (w^{k,l})^2}
     .
-\end{align}
-
-
-\textbf{Log joint} $\log p_\q(\x, z)$. Because the marginal $q_\f(z^k | x)$ is intractable, it is difficult to compute an lower bound or upper bound at each sweep. Here we compute the log joint in each test dataset for both the APG sampler with different number of sweeps and the RWS baselines and report the differences on average to see how much more is achieved by the APG sampler. In both models, the APG sampler gains a higher log joint compared with the encoder trained by RWS.
-
-\textbf{ESS}. One advantage of the APG sampler that it decomposes a high dimensional sampling problem into a sequence of lower dimensional sampling problems. To show that, we compute the ESS when 1) we resample only after one sweep and 2) we resample after each block update. WE can see that the granular sampling strategy significantly improves the ESS in both cases.
-
-\subsection{Fixed Computation Budget Analysis}
-As a mean of comparing the performance of APG samplers for varying numbers of sweeps $K$, we perform an experiment in which the computation budget is fixed at $K \cdot L = 1000$ samples. Figure~\ref{fig:budget} shows $\log p_\theta(x, z)$ and ESS/L. The shaded area denotes the standard deviation over 10 runs that each comprise 5 datasets that were chosen at random. We can see that it in general, it is more effective to perform more APG sweeps $K$ with a smaller number of particles $L$, that it is to increase the particle budget. 
+\end{align*}
+Figure~\ref{fig:fixed-budget-gmm} shows that it is more effective to perform more APG sweeps $K$ with a smaller number of particles $L$, that it is to increase the particle budget. To additionally evaluate different block update strategies we perform APG methods in GMM with two block updates; One that jointly update the global and local variables $\{\mu, \tau, c\}$, and the other one that does it separately $\{\mu, \tau\}, \{c\}$. We can see that the more granular sampling strategy improves the ESS.
 
 \subsection{Deep Generative Mixture Model}
-We next consider the task of training a deep generative model $p_\q(\x, \z)$ is jointly with the APG sampler. Our dataset consists of ring-shaped clusters. The true generative model (which we assume is unknown) takes the form
+We next consider the task of training a deep generative model $p_\q(\x, \z)$ is jointly with the APG sampler. Our dataset consists of ring-shaped clusters. The generative model takes the form
 \begin{align*}
-    \mu_i \sim \text{Norm}(0, 
+    \mu_i &\sim \text{Norm}(0, 
     \sigma_0^2 I), 
-    \qquad i = 1, 2, ..., I \\
-    c_n \sim \mathrm{Disc}(\pi), \quad \alpha_n \sim \mathrm{Unif}[0, 2\pi], \\
-    x_n | c_n=i \sim \text{Norm}(g_\q(\alpha_n) + \mu_i, \Sigma_\epsilon).
+    i = 1, 2, ..., I \\
+    c_n &\sim \mathrm{Disc}(\pi), \alpha_n \sim \text{Beta}(1, 1), n = 1, 2, ..., N \\
+    x_n | c_n=i &\sim \text{Norm}(g_\q(\alpha_n) + \mu_i, \sigma^2_{\epsilon} I).
 \end{align*}
-Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and an angle $\alpha_n$ we define a position on a ring, from which We sample a data point $x_n$ with 2D Gaussian noise.
+Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and an embedding $\alpha_n$ we define a position on a ring, from which We sample a data point $x_n$ with 2D Gaussian noise.
 
 % \begin{figure*}[!h]
 %   \centering
@@ -734,43 +740,7 @@ Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and a
 %   \label{mnist-qualitative}
 % \end{figure*}
 
-\begin{figure*}[!h]
-  \centering
-  \includegraphics[width=1.0\textwidth]{figures/bmnist-5digits-samples.pdf}
-%   \vspace*{-5mm}
-%   \caption{5 digits.}
-  \caption{Inferred digit trajectories (top) and reconstructions (bottom) for test dataset with $D = 5$ digits and $T = 15$ time steps.}
-  \label{mnist-qualitative}
-\end{figure*}
-% \begin{table*}[t!]
-% \centering
-% \caption{$\log p_\q (x, z)$}
-% \begin{tabular}{ccccccccccccc}
-% \toprule
-%      & RWS & \multicolumn{2}{c}{HMC} & \multicolumn{2}{c}{HMC5x} & \multicolumn{2}{c}{HMC10x} & BPS & \multicolumn{3}{c}{APG} & Gibbs \\
-%      & & K=10 & K=20 & K=10 & K=20 & K=10 & K=20 & K=20 & K=5 & K=10 & K=20 & K=20 \\
-%     \midrule
-%     GMM & -765.13 & -675.34 & -659.45 & -593.17 & -542.01 & -500.74 & -467.3 & -668.89 & -481.65 & -455.66 & -446.91 & -457.33 \\
-%     DGMM & -5974.6 & --& -- & -- & -- & -2546.9 & -- & -3428.2 & -2491.2 & -2484.1 & -2481.6 & -- \\
-%     DGMM & -3172.0 & & & & & -2184.9 &  & -4204.5 & -2050.4 & -2040.2 & -2035.1 & -- \\
-%     % BMNIST & -- & --& -- & -- & -- & --\\
-%     \bottomrule
-% \end{tabular}
-% \end{table*}
-\begin{table*}[t!]
-\centering
-\caption{$\log p_\q (x, z)$}
-\begin{tabular}{cccccccccc}
-\toprule
-     & RWS & HMC1x & HMC5x & HMC10x & BPS & \multicolumn{3}{c}{APG} & GIBBS \\
-     & & K=20 & K=20 & K=20 & K=20 & K=5 & K=10 & K=20 & K=20 \\
-    \midrule
-    GMM & -765.13 & -659.45 & -542.01 & -467.3 & -668.89 & -481.65 & -455.66 & -446.91 & -457.33 \\
-    DGMM & -3172.0 & -2184.9 & -2184.2 & -2184.0 & -4204.5 & -2050.4 & -2040.2 & -2035.1 & -- \\
-    % BMNIST & -- & --& -- & -- & -- & --\\
-    \bottomrule
-\end{tabular}
-\end{table*}
+
 % \begin{table}[t!]
 %     \centering
 %     \caption{$\log p_\q (x, z)$ and mean squared error on BMNIST test set with different methods.}
@@ -786,9 +756,9 @@ Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and a
 %     \bottomrule
 %     \end{tabular}   
 % \end{table}
-We train our model on 20,000 datasets with $N = 200$ data points and $I = 4$ clusters with fixed hyperparameters ($\sigma_0 = 3.5$, $\Sigma_{\epsilon} = 0.2$). We use $20$ datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
+We train our model on 20,000 datasets with $N = 200$ data points and $I = 4$ clusters with fixed hyperparameters ($\sigma_0 = 3$, $\sigma^2_{\epsilon} = 0.1$). We use $20$ datasets per batch, $K=10$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
 
-Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{samples-dgmm} shows individual samples analogous to the ones in Figure~\ref{samples-gmm}. The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
+Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{fig:samples-dgmm} shows individual samples analogous to the ones in Figure~\ref{fig:samples-gmm}. The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
 
 
 
@@ -800,13 +770,13 @@ The deep generative model is a state space model that factorizes across digits o
 \begin{align*}
     z^{\mathrm{what}}_{d} 
     &\sim 
-    \text{Norm}(0, I), 
-    \,\,\, 
-    z^{\mathrm{where}}_{d, 1} \sim \text{Norm}(0, I), 
+    \text{Norm}(0, I)
     \\
+    z^{\mathrm{where}}_{d, 1} &\sim \text{Norm}(0, I)
+    ,
     z^{\mathrm{where}}_{d, t} 
     %| z^{\mathrm{where}}_{d, t - 1} 
-    &\sim 
+    \sim 
     \text{Norm}(z^{\mathrm{where}}_{d, t - 1}, \sigma^2_0 I) 
     \\
     x_t 
@@ -824,19 +794,30 @@ The deep generative model is a state space model that factorizes across digits o
         \Big)
     \Big)
 \end{align*}
-Here, ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a feedforward decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on the location variable $z^{\mathrm{where}}_{d, t}$. 
+where $d=1, 2,.., D$, $t=1, 2,.., T$, and ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a feedforward decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on the location variable $z^{\mathrm{where}}_{d, t}$. 
 
 Our amortized Gibbs updates employ $T + 1$ blocks $(z_{1:D}^{\mathrm{what}}, z_{1:D, 1}^{\mathrm{where}}, z_{1:D, 2}^{\mathrm{where}}, \dotsc, z_{1:D, T}^{\mathrm{where}})$.
-Empirically this works better than splitting the latent variables into global and local variables, since resampling at each time step $t$ helps disentangle the digit locations if they overlap.
+% Empirically this works better than splitting the latent variables into global and local variables, since resampling at each time step $t$ helps disentangle the digit locations if they overlap.
+We train our model on 60000 bouncing MNIST sequences, each of which contains $D=3$ digits and $T=10$ frame images. We use $5$ sequences per batch, $K=5$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
 
-We train our model on 60000 bouncing MNIST sequences, each of which contains $D=3$ digits and $T=10$ frame images. We use $10$ sequences per batch, $K=5$ sweeps, $L=10$ particles, and Adam ($\mathrm{lr} = 10^{-4}, \beta_1 = 0.9, \beta_2 = 0.99$) for 200,000 iterations (see Appendix \ref{appendix:architecture} for architecture details).
-
-We show that APG sampler can scale to larger number of variables by testing the model on datasets with $T\in \{20, 100\}$ time steps  and $D \in \{3, 4, 5\}$ digits. Figure~\ref{mnist-qualitative} shows the inference and reconstruction using single samples from the variational distribution. (plots are truncated by the first $15$ time steps due to limited space, see Appendix \ref{appendix:full-recons} for more examples with full time steps). 
+We show that the scalability of APG sampler by testing the model on datasets up to $T=100$ time steps and $D=5$ digits. Figure~\ref{mnist-qualitative} shows the inference and reconstruction using single samples from the variational distribution (see Appendix \ref{appendix:full-recons} for results with full time steps). 
 Qualitatively, we see that the digit trajectories $\z_{1:D, 1:T}^{\mathrm{where}}$ and latent variables $\z_{1:D}^{\mathrm{what}}$ are inferred well.
-In Figure~\ref{plot-mse-bmnist}, we show the mean squared error between the video and its reconstruction for different $T$ and $D$.
-The results confirm that performance improves with increasing number of Gibbs sweeps $K$.
-In certain cases, a larger number of time points $T$ in fact improves convergence as a function of the number of sweeps $K$.
-
+% In Figure~\ref{plot-mse-bmnist}, we show the mean squared error between the video and its reconstruction for different $T$ and $D$.
+% The results confirm that performance improves with increasing number of Gibbs sweeps $K$.
+% In certain cases, a larger number of time points $T$ in fact improves convergence as a function of the number of sweeps $K$.
+% \begin{table}[]
+%     \centering
+%     \begin{tabular}{cccc}
+%     \toprule
+%     K=5 & K=5 & K=5 & K=5 \\
+%     T=10 & T=20 & T=50 & T=100 \\
+%     \midrule
+%     0.0148 & 0.0147 & 0.0151 & 0.0145 \\
+%     \bottomrule
+%     \end{tabular}
+%     \caption{Caption}
+%     \label{Mean Squared Error}
+% \end{table}
 % \begin{figure}[!t]
 %     \centering
 %     \includegraphics[width=\columnwidth]{figures/bmnist-mse.pdf}
@@ -850,7 +831,7 @@ Even for apparently simple problems, such as inferring the cluster parameters an
 
 APG samplers are very general, and offer a path towards the development of deep generative models that incorporate structured priors to provide meaningful inductive biases in settings where we have little or no supervision. These methods have particular strengths in problems with global variables, but more generally make it possible to design amortized approaches that exploit conditional independence. Moreover, our parameterization in terms of neural sufficient statistics makes it comparatively easy to design models that scale to much larger number of latent variables and thus generalize to datasets that vary in size. 
 
-Immediate lines of future work are to compare the approach in this paper, which learns kernels that leave the target density invariant, with approaches that perform annealing, in which the learned kernels are assymmetric in the sense that they gradually transform the initial encoder distribution to the target density. 
+% Immediate lines of future work are to compare the approach in this paper, which learns kernels that leave the target density invariant, with approaches that perform annealing, in which the learned kernels are assymmetric in the sense that they gradually transform the initial encoder distribution to the target density. 
 
 \section{Acknowledgements}
 
@@ -1020,6 +1001,28 @@ We can see that individual block updates leave the posterior invariant by propos
 \end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}[!t]
+  \setstretch{1.2}
+  \caption{\textsc{Systematic Resampling}}
+  \label{alg:resampling_sys}
+\begin{algorithmic}[1]
+\small
+    \State \textbf{Input:} $z^{\:1:L}, w^{\:1:L}$
+    \State \textbf{Output:} $z'^{\:1:L}, w'^{\:1:L}$
+%   \State{Sort weights (optional)}
+%   \State{$W_0 \leftarrow 0$}
+    \State{$u \sim \mathcal{U}[0,1)$}
+    \State{Compute inclusive prefix sum of  $w_1,  \ldots, w_L$ to obtain $W_1, \ldots , W_L$}
+    \For {$i = 1$ \textbf{to} $L$}
+        \State $a^i = \left\lfloor \frac{LW_i}{W_L} - u \right\rfloor + 1$ \Comment{Index Selection} 
+        %   \State{Compute adjacent differences between $K'_1, \ldots, K'_L$ to obtain $k_1, \ldots, k_L$}
+        \State Set $ z'^{\:i} = z^{a^i}$
+        \State Set $ w'^{\:i} = \frac{1}{L} \sum_{l = 1}^L w^l$ \Comment{Re-Weigh}
+    \EndFor
+    \State \textbf{Return} $z'^{\:1:L}, w'^{\:1:L}$
+\end{algorithmic}
+\end{algorithm}
+
 \section{Proof of the amortized population Gibbs algorithm}
 \label{appendix:proof-algo}
 
@@ -1082,8 +1085,6 @@ where $\bar w^l := w^l / \sum_{l' = 1}^L w^{l'}$ is the normalized weight.
         = Z_p \E_{p(z)}[f(z)].
     \end{align*}
 \end{proof}
-
-
 
 \begin{proposition}[Resampling]
 \label{proposition:resampling}
