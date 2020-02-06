@@ -427,7 +427,7 @@ SMC methods \cite{doucet2001sequential} combine two basic ideas. The first is se
 % Most commonly, SMC methods are used in the context of state space models to generate proposals for a sequence of variables by proposing one variable at a time. 
 SMC \emph{samplers} (see  Algorithm~\ref{alg:smcs}) are a subclass of SMC methods that interleave resampling with the application of a transition kernel, which is sometimes also referred to as \emph{resample-move} SMC. 
 
-The distinction between SMC methods for state space models and SMC samplers is subtle but important. Whereas the former generate proposals for a sequence of variables $z_{1:t}$ by proposing $z_t \sim q(z_t \mid z_{1:t-1})$ to \emph{extend} the sample space at each iteration, SMC samplers can be understood as an importance sampling analogue to Markov chain Monte Carlo (MCMC) methods \cite{brooks2011handbook}, which construct a Markov chain $z^{1:k}$ by generating a proposal $q(z^k \mid z^{k-1})$ from a transition kernel at each iteration.
+% The distinction between SMC methods for state space models and SMC samplers is subtle but important. Whereas the former generate proposals for a sequence of variables $z_{1:t}$ by proposing $z_t \sim q(z_t \mid z_{1:t-1})$ to \emph{extend} the sample space at each iteration, SMC samplers can be understood as an importance sampling analogue to Markov chain Monte Carlo (MCMC) methods \cite{brooks2011handbook}, which construct a Markov chain $z^{1:k}$ by generating a proposal $q(z^k \mid z^{k-1})$ from a transition kernel at each iteration.
 \begin{algorithm}[!t]
 \setstretch{1.2}
   \caption{SMC sampler}
@@ -450,16 +450,16 @@ The distinction between SMC methods for state space models and SMC samplers is s
 \end{algorithmic}
 \end{algorithm}
 
-To understand how approximate Gibbs proposals can be used in a SMC sampler, we will first explain how they can be used to define a sequential importance sampler (SIS), which decomposes the importance weight into a sequence of \emph{incremental} weights. In general, SIS considers a sequence of unnormalized target densities $\gamma^1(z^1), \gamma^2(z^{1:2}), \dots, \gamma^K(z^{1:K})$. If we now consider an initial proposal $q^1(z^1)$, along with a sequence of conditional proposals $q^k(z^k \mid z^{1:k-1})$, then we can recursively construct a sequence of weights $w^k = v^k w^{k-1}$ by assuming $w^1 = \gamma^1(z^1) / q^1(z^1)$ and defining the incremental weight
+To understand how approximate Gibbs proposals can be used in a SMC sampler, we will first explain how they can be used to define a sequential importance sampler (SIS), which decomposes the importance weight into a sequence of \emph{incremental} weights. In general, SIS considers a sequence of unnormalized target densities $\gamma^1(z^1), \gamma^2(z^{1:2}), \dots, \gamma^K(z^{1:K})$. If we now consider an initial proposal $q^1(z^1)$, along with a sequence of conditional proposals $q^k(z^k \mid z^{1:k-1})$, then we can recursively construct a sequence of weights $w^k = v^k w^{k-1}$ by assuming $w^1 = \gamma^1(z^1) / q^1(z^1)$ and defining incremental weights 
 \begin{align*}
     v^k 
     &=
     \frac{\gamma^k(z^{1:k})}{\gamma^{k-1}(z^{1:k-1}) q^k(z^k \mid z^{1:k-1})}.
 \end{align*}
-This construction ensures that, at step $k$ in the sequence, we have a weight $w^k$ relative to the intermediate  density $\gamma^k(z^{1:k})$ of the form (see Appendix~\ref{appendix:sis-weight})
+This construction ensures that, at step $k$ in the sequence, we have a weight $w^k$ relative to the intermediate  density $\gamma^k(z^{1:k})$ of the form (see Appendix~\ref{appendix:sis-weight} for proof)
 \begin{align*}
     w^k
-    = 
+    =
     \frac{\gamma^k(z^{1:k})}
          {q^1(z^1) \prod_{k'=2}^k q^{k'}(z^{k'} \mid z^{1:k'-1})}.
 \end{align*}
@@ -512,9 +512,9 @@ When the approximate Gibbs kernel converges to the actual Gibbs kernel, this cho
 \end{align*}
 In general, the weights $w^k$ in the sequential importance sampling scheme defined above will have a high variance. The weights $w^1$ are just normal importance sampling weights, which themselves will have a high variance when $z$ is high-dimensional, or there are correlations between variables. Moreover, we are now sampling these same variables $k$ times. When the approximate Gibbs kernel converges to the true kernel, this will not increase the variance of weights (since $v^k=1$ in this limit), but during training variance of weights $w^k$ will increase with $k$, since we are now jointly sampling an entire Markov chain.
 
-To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step. This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight.
+To overcome this problem, SMC samplers interleave application of the transition kernel with a \emph{resampling} step (see Appendix~\ref{appendix:resample-algo} for Algorithm). This step generates a new set of samples by selecting current samples with replacement, with probability proportional to their weight.
 % Concretely, suppose that we have a set \emph{incoming} samples $\{(w^{k,l}, z^{k,l})\}_{l=1}^L$, then the resampling procedure (see Algorithm~\ref{appendix:resample-algo}) selects index $a$ with probability $P(a\!=\!l) = w^{k,l} / \sum_{l'} w^{k,l'}$ and returns an outgoing sample $z'^{k,l} = z^{k,a}$ whose $w'^{k,l} = \frac{1}{L} \sum_l w^{k,l}$ is equal to the average weight. 
-The resampling (see Appendix~\ref{appendix:resample-algo}) reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
+The resampling reduces the variance of the importance weights at the expense of also reducing the diversity of the sample set; high-weight samples are selected frequently, whereas low-weight samples are selected infrequently or not at all.
 
 % To prevent from this diversity reduction, we instead perform the systematic resampling~\cite{murray2013parallel} (see Appendix~\ref{appendix:resample-algo}). 
 
@@ -527,10 +527,10 @@ In APG sampler we will employ resampling after each block update $z_b\sim q_\phi
          {p_\q(x, z_b, z_{-b}) \: q_\f(z'_b \mid  x, z_{-b})}
     .
 \end{align}
-These incremental weights will have a much lower variance than the weights $w^k$, since we are now able to decompose a sampling problem for all the variables in a model into sampling problems for individual blocks. In models with many latent variables, such as the ones that we will consider in our experiments, this has the potential to greatly increase the tractability of the gradient estimation problem. 
-
-
-We refer to this implementation of a SMC sampler as an amortized population Gibbs (APG) sampler, and summarize all the steps of the computation in Algorithm~\ref{alg:amortized-gibbs}. In Appendix~\ref{appendix:proof-algo}, we prove that this algorithm is correct using an argument based on proper weighting. More informally this property holds due to the fact that this sampler is a specific instance of a SMC sampler. 
+These incremental weights will have a much lower variance than the weights $w^k$, since we now decompose a sampling problem for all variables into sampling problems for individual blocks. 
+In our experiments we will consider models with high-dimensional correlated variables, and this scheme greatly increase the tractability of the gradient estimation problem. 
+We refer to this implementation of a SMC sampler as an amortized population Gibbs sampler, and summarize all the steps of the computation in Algorithm~\ref{alg:amortized-gibbs}. In Appendix~\ref{appendix:proof-algo}, we prove that this algorithm is correct using an argument based on proper weighting. 
+% More informally this property holds due to the fact that this sampler is a specific instance of a SMC sampler. 
 
 \begin{algorithm}[!tb]
 \setstretch{1.2}
@@ -851,10 +851,7 @@ Gibbs sampling strategies that sample from exact conditionals rely on conjugacy 
         \lambda^\top T(\z) 
         - \log A(\lambda) \}.
 \end{align*}
-In these densities $h(\cdot)$ is a base measure, $T(\cdot)$ is a vector of sufficient statistics, and $A(\cdot)$ is a log normalizer. The two densities are jointly conjugate when
-\begin{align*}
-    T(\z) = (\eta(\z), -\log A(\eta(\z)))
-\end{align*}
+where $h(\cdot)$ is a base measure, $T(\cdot)$ is a vector of sufficient statistics, and $A(\cdot)$ is a log normalizer. The two densities are jointly conjugate when $T(\z) = (\eta(\z), -\log A(\eta(\z)))$.
 In this case, the posterior distribution lies in the same exponential family as the prior
 \begin{align*}
     p(\z \mid \x) 
@@ -896,7 +893,7 @@ In the more general setting we consider here, these conjugacy relationships will
 \end{align}
 This parameterization has a number of desirable properties. Exponential families are the largest-entropy distributions that match the moments defined by the sufficient statistics (see e.g.~\cite{wainwright2008graphical}), which is helpful when minimizing the inclusive KL divergence. In exponential families it is also more straightforward to control the entropy of the variational distribution. In particular, we can initialize $T_\f(x, z_{-b})$ to output values close to zero in order to ensure that we initially propose from a prior and/or regularize $T_\f(x, z_{-b})$ to help avoid local optima.
 
-A particularly useful case arises in models where the data $\x = \{x_1, \ldots, x_N\}$ are independent conditioned on $\z$. In these models it is often possible to partition the latent variables $\z = \{\z^\textsc{g}, \z^\textsc{l}\}$ into global and local variables $\z^{\textsc{g}}$ and local variables $\z^{\textsc{l}}$. The dimensionality of global variables is typically constant, whereas local variables $\z^\textsc{l} = \{\z^\textsc{l}_1, \ldots, \z^\textsc{l}_N\}$ have a dimensionality that increases with the data $N$. For models with this structure, the local variables are typically conditionally independent $z^\textsc{L}_n \bot z^\textsc{L}_{-n} \mid x, z^\textsc{g}$, which means that we can parameterize the sufficient statistics as
+A useful case arises in models where the data $\x = \{x_1, \ldots, x_N\}$ are independent conditioned on $\z$. In these models it is often possible to partition the latent variables $\z = \{\z^\textsc{g}, \z^\textsc{l}\}$ into global and local variables $\z^{\textsc{g}}$ and local variables $\z^{\textsc{l}}$. The dimensionality of global variables is typically constant, whereas local variables $\z^\textsc{l} = \{\z^\textsc{l}_1, \ldots, \z^\textsc{l}_N\}$ have a dimensionality that increases with the data $N$. For models with this structure, the local variables are typically conditionally independent $z^\textsc{L}_n \bot z^\textsc{L}_{-n} \mid x, z^\textsc{g}$, which means that we can parameterize the sufficient statistics as
 \begin{align*}
     \tilde{\lambda}^\textsc{g}
     &= 
@@ -995,7 +992,7 @@ We train our APG samplers on 20,000 GMM instances with $I = 3$ clusters and $N =
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
-  \caption{Log joint $\log p(x, z)$ as a function of number of sweeps $K$ for a GMM instance. The APG sampler and Gibbs sampler have a sampling budget of $L=100$ samples per sweep, while BPS has a sampling budgets of $10,000$ per sweep. HMC-RWS has a budget of $100$ samples per leapfrog per step sweep. To achive results comparable to AGP and Gibbs samplers, HMC-RWS needs a $10$ times larger sampling budget while BPS under-performs even with a $100$ times larger sampling budget.}
+  \caption{$\log p(x, z)$ as a function of number of sweeps $K$ for a GMM instance. The APG sampler and Gibbs sampler have a sampling budget of $L=100$ samples per sweep, while BPS has a sampling budgets of $10,000$ per sweep. HMC-RWS has a budget of $100$ samples per leapfrog step ($LS$ leapfrog steps are performed per sweep). To achive results comparable to AGP and Gibbs samplers, HMC-RWS needs a $10$ times larger sampling budget while BPS under-performs even with a $100$ times larger sampling budget.}
   \label{fig:convergence-gmm}
 \end{figure}
 % We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
@@ -1031,7 +1028,7 @@ Furthermore, we compare the APG sampler with other iterative inference methods: 
 \end{figure*}
 \begin{table*}[t!]
 \centering
-\caption{Averaged log joint $\log p_\q (x, z)$ of the test corpora for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
+\caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
 We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
 For the GMM the test corpus contains $20,000$ instances, each of which has $N=100$ data points; In the DMM the test corpus contains $20,000$ instances with $N=600$ data points per instance; In the bouncing MNIST experiment the test corpus contains $10,000$ instances with $T=100$ time steps and $D=5$ digits.}
 
