@@ -188,17 +188,18 @@ To overcome these limitations, we develop a more general approach that frames va
 
 Our experiments establish that APG samplers can capture the hierarchical structure in deep generative models in an unsupervised manner.
 In Gaussian mixture models, where Gibbs updates can be computed in closed form, the learned proposals converge to the analytic conditional posteriors.
-To evaluate the performance on non-conjugate models we trained a deep generative mixture model and an unsupervised tracking model and compare APG samplers to reweighted wake-sleep (RWS) and an HMC-augmented RWS baseline (HMC-RWS).
+To evaluate the performance on non-conjugate models we trained a deep generative mixture model and an unsupervised tracking model and compare APG samplers to reweighted wake-sleep (RWS) and a HMC-augmented RWS baseline (HMC-RWS).
 Both models are representative of current state-of-the art unsupervised inference problems.
+%models can not be representative of problems
 In all experiments APG samplers were able to capture the hierarchical characteristics of the problem and outperformed existing methods in terms of training efficiency and inference accuracy.
 
 We summarize the contributions of this paper as follows: 
 \begin{enumerate}[labelwidth=0.5em,labelsep=0.5em,leftmargin=1.0em,topsep=0em,itemsep=\parsep]
 % [labelwidth=0.5em,labelsep=0.5em,leftmargin=1.0em,topsep=0em,label={\tiny\raisebox{0.7ex}{\textbullet}}]
-    \item We develop APG samplers, a novel amortized inference methods based on adaptive importance sampling
+    \item We develop APG samplers, a novel amortized inference method based on adaptive importance sampling
     \item We present a novel parameterization using neural suffi- cient statistics that accounts for the size of the input data
-    \item We used the APG sampler framwork to train structured models with 100s of variables for state-of-the-art inference problems in an unsupervised manner 
-    \item Experiments show substantial improvment during test-time inference compared to existing inference methods
+    \item APG samplers can be used to train structured models with 100s of variables for state-of-the-art inference problems in an unsupervised manner 
+    \item Experiments show substantial improvement during test-time inference compared to existing inference methods
 \end{enumerate}
 
 %In this work we develop a novel amortized variational inference method which can be used to train deep generative models with hierarchical structure. Moreover, our approach learns higher-quality proposals than standard amortized variational methods, and outperforms other inference methods that also perform iterative updates with a transition kernel.
@@ -213,7 +214,7 @@ In probabilistic machine learning, we define generative models in terms of a joi
 
 % In deep probabilistic machine learning, we are interested in the task of jointly training a generative model $p_\q(x, z)$ by maximizing its marginal likelihood $p_\q(x)$ and learning an inference model $q_\f(z \mid x)$ that approximates the posterior $p_\q(z \mid x)$ conditioned on the data $x\sim p^{\text{DATA}}(x)$ that is sampled from an (unknown) data distribution.
 
-A most commonly used class of deep probabilistic models are variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In VAEs, generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by a neural network, known as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code. VAEs minimize the exclusive KL divergence $\mathrm{KL}(q_\f(z | x) || p_\q(z | x))$ by maximizing a stochastic evidence lower bound
+A most commonly used class of deep probabilistic models are variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In VAEs, generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by a neural network, known as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code. VAEs minimize the exclusive KL divergence $\mathrm{KL}(q_\f(z | x) || p_\q(z | x))$ by maximizing a stochastic evidence lower bound (ELBO)
 \begin{align*}
     \mathcal{L} (\f)
     &
@@ -927,7 +928,6 @@ The advantage of this parameterization is it allows us to train approximate Gibb
 %   \caption{Visualization of a single sample for (\textbf{a}) a GMM instance with $N=100$ data points and (\textbf{b}) a DMM instance with $N=600$ data points. The left columns show the data instance, the second column the inference result from RWS, and the subsequent columns the inference result after $K$ APG sweeps. In addition the rightmost column in (\textbf{b}) shows the reconstruction from the generative model.}
   \label{fig:samples-mixture}
 \end{figure*}
-\iffalse
 \section{Related Work}
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{marino2018iterative}. 
 % Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. 
@@ -951,7 +951,6 @@ Moreover, both methods perform a joint update on all variables while we are cons
 %% - learns block conditionals using sleep loss
 %% - focus on conditional-sleep
 \citet{wang2018meta} develop a meta-learning approach to learn Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z \sim p(x, z)$ from the true generative model $p(x,z)$, which means gradients can be estimated using a sleep-phase Monte Carlo estimator. This circumvents the need for self-normalized estimators of the form in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Similar to our work, the approach by \citet{wang2018meta} minimizes the inclusive KL, but uses the learned conditionals to directly define an (approximate) MCMC sampler, rather than using them as proposals in an SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
-\fi
 
 
 
