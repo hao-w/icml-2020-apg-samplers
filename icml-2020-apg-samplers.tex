@@ -151,88 +151,129 @@ Amortized variational methods have proven difficult to scale to structured probl
 \end{abstract}
 
 %%%
+%\vspace{-0.5em}
 \section{Introduction}
 %\vspace{-0.5em}
 \label{introduction}
-Many inference tasks involve hierarchical structure. For example, when modeling a corpus of videos that contain moving objects, there are three levels of representation. At the level of the corpus as a whole, we might want to reason about the distribution over objects, as well as the dynamics of motion. At the level of each instance, we might wish to reason about specific objects that are present in a video. Finally, at the level of individual data points, we might want to reason about the positions of objects in a video frame.
+% Many inference tasks involve hierarchical structure. For example, when modeling a corpus of videos that contain moving objects, there are three levels of representation. At the level of the corpus as a whole, we might want to reason about the distribution over objects, as well as the dynamics of motion. At the level of each instance, we might wish to reason about specific objects that are present in a video. Finally, at the level of individual data points, we might want to reason about the positions of objects in a video frame.
+Many inference tasks involve hierarchical structure. For example, when modeling a corpus of videos that contain moving objects, there are three levels of representation. At the level of the corpus as a whole, we can reason about the distribution over objects and dynamics of motion. At the instance level, i.e.~for each video, we can reason the visual features and trajectories of individual objects. Finally, at a data point level, i.e.~for each video frame, we can reason about the visibility of objects and their position.
 
-In the absence of supervision, uncovering hierarchical structure from data necessitates inductive biases. Deep generative models provide a path towards incorporating such biases in the form of hierarchical priors that mirror the structure of the problem domain. By parameterizing conditional distributions in the model using neural networks, we can hope to learn a model from data that captures corpus-level features (e.g.~the appearance of objects and the motion dynamics), and perform inference to reason about instance-level variables (e.g.~object characteristics and positions).
+%Intuitively, being able to reason about the position of an object in individual frames should help to reason about the trajectories of the object in the video, which in turn helps us to reason about the governing dynamics of the system. Vice versa, if we can reason about the dynamics, inferring individual trajectories and consequently object's positions in a video frames should be much easier. The same intuition holds for for sequential structure, i.e. reasoning about a particular frame is much easier if we are able to reason about previous frames. This high level intuition is one of the main drivers of the presented work.
 
-In recent years we have seen applications of amortized variational methods to inference in hierarchical domains, such as object detection \cite{eslami2016attend}, modeling of user reviews \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. These approaches build on the framework of variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic} to train structured deep generative models. However, scaling up these approaches to more complex domains still poses significant challenges. Whereas it is easy to scale stochastic variational inference to large corpora of data, it is not easy to apply standard reparameterized estimators to models with a large number of (correlated) variables at the instance level. 
+% In the absence of supervision, uncovering such hierarchical structure from data requires strong inductive biases. Deep generative models provide a path towards incorporating such biases in the form of hierarchical priors that mirror the structure of the problem domain. By parameterizing conditional distributions in the model using neural networks, we can hope to learn a model from data that captures corpus-level features (e.g.~the appearance of objects and the motion dynamics), and perform inference to reason about instance-level variables (e.g.~object characteristics and positions).
 
-In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. Our approach takes inspiration from work by \citet{johnson2016composing}, which develops methods for efficient inference in deep generative models with a conjugate-exponential family prior. In this specific class of models, we can perform inference using variational expectation maximization (EM)  \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that iterate between closed-form updates to blocks of variables. These methods are highly computationally efficient and scale to large numbers of variables; variational EM can often converge in a small number of iterations. However, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of mode conjugate-exponential models.
+In the absence of supervision, uncovering structure from data requires inductive biases. Deep generative models provide a path towards incorporating biases in the form of priors that mirror the structure of the problem domain. By %learning a model in which we 
+parameterizing conditional distributions with neural networks, we hope to learn models that use corpus-level characteristics (e.g.~the appearance of objects and the motion dynamics) to make data-efficient inferences about instance-level variables (e.g.~object appearance and positions).
 
-To overcome these limitations, we develop a more general approach. Rather than requiring exact EM updates, we propose an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we minimize the inclusive KL divergence w.r.t.~the conditional posterior. We refer to the resulting class of methods as \emph{amortized population Gibbs} samplers, since the proposals approximate Gibbs updates.
+In recent years we have seen applications of amortized variational methods to inference in hierarchical domains, such as object detection \cite{eslami2016attend}, modeling of user reviews \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. These approaches build on the framework of variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic} to train structured deep generative models. However, scaling up these approaches to more complex domains still poses significant challenges. Whereas it is easy to train VAEs on large corpora of data, it is not easy to train structured encoders for models with a large number of (correlated) variables at the instance level. 
 
-% The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
+In this paper, we develop methods for amortized inference that scale to structured models with 100s of latent variables. Our approach takes inspiration from work by \citet{johnson2016composing}, which develops methods for efficient inference in deep generative models with conjugate-exponential family priors. In this class of models, we can perform inference using variational expectation maximization (EM)  \cite{beal2003variational,bishop2006pattern,wainwright2008graphical}, which iterates between closed-form updates to blocks of variables. Variational EM is computationally efficient, often converges in a small number of iterations, and scales to a large number of variables. However, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
 
+To overcome these limitations, we develop a more general approach that frames variational inference as adaptive importance sampling. We propose \emph{amortized population Gibbs} samplers, a class of methods that iterate between conditional proposals to blocks of variables to construct high-quality samples. To train these proposals, we minimize the inclusive KL divergence w.r.t.~the conditional posterior to approximate Gibbs updates. We combine these proposals with a sequential Monte Carlo (SMC) sampling strategy to reduce the variance of importance weights, which improves efficiency during training and inference at test time.
 
+%%%%%%%%%Tuan Anh's EDIT
+% The key component of APG samplers is the resampling step within a sequential Monte Carlo (SMC) sampler~\citep{delmoral2006sequential} scheme which leads to more efficient training and better inference during test time.
+% Resampling reduces the variance of the gradient of the KL divergence that is minimized during training time.
+% It also acts as a correcting factor for the discrepancy between the learned Gibbs conditionals and the true conditional posterior.
+% Thus, our method can also be viewed as adaptive importance sampling since it learns a set of proposals for SMC samplers, and as amortized inference since using these proposals speeds up test time inference for different observations.
 
-The key component of APG samplers is the resampling step within a sequential Monte Carlo (SMC) sampler~\citep{delmoral2006sequential} scheme which leads to more efficient training and better inference during test time.
-Resampling reduces the variance of the gradient of the KL divergence that is minimized during training time.
-It also acts as a correcting factor for the discrepancy between the learned Gibbs conditionals and the true conditional posterior.
-Thus, our method can also be viewed as adaptive importance sampling since it learns a set of proposals for SMC samplers, and as amortized inference since using these proposals speeds up test time inference for different observations.
+% Hao's EDIT
+%APG methods
 
-% TA: the paragraph above is a potential replacement of the paragraph below
-% The APG methods can be understood as a form of adaptive importance sampling; By iterative processes it constructs high quality proposals, which serve to compute the gradient estimate of the KL divergence we minimize at training time. Equivalently it can be understood as a form of amortized variational inference; We can use the learned proposals at test time to perform inference to different models (instances) by expending more computation.
+%can be understood as a form of adaptive importance sampling; By iterative processes it constructs high quality proposals, which serve to compute the gradient estimate of the KL divergence we minimize at training time. Equivalently it can be understood as a form of amortized variational inference; We can use the learned proposals at test time to perform inference to different models (instances) by expending more computation.
 
-Our experiments show that learned proposals converge to the conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that APG samplers can train deep generative models, including deep generative mixture models and unsupervised tracking models. Both of the tasks are representative of the current state-of-the art in unsupervised approaches. As a class of scalable inference methods, APG samplers achieve accurate inference results at test time to instances with much more number of variables.
+% Our experiments show that learned proposals converge to the conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that APG samplers can capture the hierarchical structure in deep generative models in an unsupervised manner.
 
-In this work we develop a novel amortized variational inference method which can be used to train deep generative models with hierarchical structure. Moreover, our approach learns higher-quality proposals than standard amortized variational methods, and outperforms other inference methods that also perform iterative updates with a transition kernel.
+% train deep generative models, including deep generative mixture models and unsupervised tracking models. Both of the tasks are representative of the current state-of-the art in unsupervised approaches. As a class of scalable inference methods, APG samplers achieve accurate inference results at test time to instances with much more number of variables.
+
+Our experiments establish that APG samplers can capture the hierarchical structure in deep generative models in an unsupervised manner.
+In Gaussian mixture models, where Gibbs updates can be computed in closed form, the learned proposals converge to the analytic conditional posteriors.
+To evaluate the performance on non-conjugate models we trained a deep generative mixture model and an unsupervised tracking model and compare APG samplers to reweighted wake-sleep (RWS)  and a HMC-augmented variational inference baseline (HMC-VI).
+Both models are representative of current state-of-the art unsupervised inference problems.
+In all experiments APG samplers where able to capture the hierarchical characteristics of the problem and outperformed existing methods in terms of training efficiency and inference accuracy.
+
+We summarize the contributions of this paper as follows: 
+\begin{enumerate}[labelwidth=0.5em,labelsep=0.5em,leftmargin=1.0em,topsep=0em,itemsep=\parsep]
+% [labelwidth=0.5em,labelsep=0.5em,leftmargin=1.0em,topsep=0em,label={\tiny\raisebox{0.7ex}{\textbullet}}]
+    \item We develop APG samplers, a novel amortized inference methods based on adaptive importance sampling
+    \item We present a novel parameterization using neural suffi- cient statistics that accounts for the size of the input data
+    \item We used the APG sampler framwork to train structured models with 100s of variables for state-of-the-art inference problems in an unsupervided manner 
+    \item Experiments show substantial improvment during test-time inference compared to existing inference methods
+\end{enumerate}
+
+%In this work we develop a novel amortized variational inference method which can be used to train deep generative models with hierarchical structure. Moreover, our approach learns higher-quality proposals than standard amortized variational methods, and outperforms other inference methods that also perform iterative updates with a transition kernel.
+
 % [SUMMARIZE CONTRIBUTIONS AS FOLLOWS. WE DEVELOP A NOVEL VARIATIONAL INFERENCE METHOD. WE DEMONSTRATE THAT THE METHOD CAN BE USED TO TRAIN DEEP GENERATIVE MODELS WITH HIERARCHICAL STUCTURE. MOREOVER OUR METHOD LEARNS HIGHER-QUALITY PROPOSALS THAN STANDARD AMORTIZED VARIATIONAL METHODS, AND OUTPERFORMS OTHER BASELINES IMPROVE AMORTIZED VARIATIONAL METHODS BY WAY OF ITERATIVE UPDATES WITH A TRANSITION KERNEL.]
 
 %Variational autoencoders (VAEs) \cite{kingma2013auto-encoding,rezende2014stochastic} are commonly used to map input data (e.g.~an image or sentence) onto and embedding vector, also known as the latent code. During training VAEs maximize a variational lower bound to learn a deep generative model and a neural variational distribution, which is known as the encoder. The lower bound is typically optimized using stochastic gradient descent by computing a reparameterized Monte Carlo estimate of its gradient. This constitutes a form of stochastic expectation maximization (EM); the Monte Carlo estimate approximates the expectation step, whereas gradient ascent implements the maximization step.
+\section{Background}
+\label{sec:background}
+In deep probabilistic machine learning, we are interested in the task of jointly training a generative model $p_\q(x, z)$ by maximizing its marginal likelihood $p_\q(x)$ and learning an inference model $q_\f(z \mid x)$ that approximates the posterior $p_\q(z \mid x)$. As most amortized inference approaches assume, the data $x\sim p^{\text{DATA}}(x)$ is sampled from an (unknown) data distribution.
+
+A most commonly used class of deep probabilistic models are variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In VAEs, generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by a neural network, known as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code. VAEs minimize the exclusive KL divergence $\mathrm{KL}(q_\f(z | x) || p_\q(z | x))$ by maximizing a stochastic evidence lower bound (ELBO)
+\begin{align*}
+    \mathcal{L} (\f)
+    &
+    = 
+    \E_{p^\textsc{data}(\x) \: q_\f(\z \mid \x)}
+    \left[
+       \log \frac{p_\q(\x, \z)}{q_\f(\z \mid \x)}
+    \right] 
+    % \\
+    % &
+    % =
+    % \E_{p^\textsc{data}(\x)}
+    % \left[
+    %     \log p_\q(x)
+    %     - 
+    %     \text{KL}(q_\f(\z \mid \x) \,||\, p_\q(\z \mid \x))
+    % \right]
+    .
+\end{align*}
+Reweighted wake-sleep (RWS) methods \cite{bornschein2014reweighted} minimize a stochastic upper bound (EUBO), which is equivalent to minimizing an inclusive KL divergence
+\begin{align*}
+    \mathcal{U} (\f)
+    &
+    = 
+    \E_{p^\textsc{data}(\x) \, p_\q(\z \mid \x)}
+    \left[
+       \log \frac{p_\q(\x, \z)}{q_\f(\z \mid \x)}
+    \right]
+    % \\
+    % &
+    % =
+    % \E_{p^\textsc{data}(\x)}
+    % \left[
+    %     \log p_\q(x)
+    %     +
+    %     \text{KL}(p_\q(\z \mid \x) \,||\, q_\f(\z \mid \x))
+    % \right]
+    .
+\end{align*}
+To compute the gradient w.r.t. $\f$, reweighted wake-sleep methods define self-normalized gradient estimator by sampling from an encoder $z \sim q_\f(z \mid x)$ and compute weights $w = p_\q(x, z) / q_\f(z \mid x)$
+\begin{align}
+\label{eq:grad-phi-rws}
+    - \nabla_\f
+    \,
+    \mathcal{U} (\f)
+    \simeq
+    \sum_{l=1}^L
+    \frac{w^l}{\sum_{l'} w^{l'}}
+    \nabla_\f
+    \log q_\f(z^l \,|\, x)
+    .
+\end{align}
+This gradient estimator has a number of advantages over the estimator used in standard VAEs \cite{le2019revisiting}. Firstly it does not rely on reparameterization, which is required by VAE gradient estimators.
+% VAE objectives rely on reparameterization to compute gradient estimates, which is not required by estimator in Equation~\ref{eq:grad-phi-rws}.
+For discrete variables, reparameterization is not possible. This means that we need to compute likelihood-ratio estimators (also known as REINFORCE-style estimators \cite{williams1992simple}), which can have very high variance. A range of approaches for variance reduction have been put forward, including continuous relaxations that are amenable to reparameterization \cite{maddison2017concrete,jang2017categorical}, credit assignment techniques (see \cite{weber2019credit} for a review), and other control variates \cite{mnih2016variational,tucker2017rebar,grathwohl2018backpropagation}. 
+
+The estimator in Equation~\ref{eq:grad-phi-rws} sidesteps the need for these variance reduction techniques. To compute this gradient, we only require that the proposal \emph{density} is differentiable, whereas reparameterized estimators require that the \emph{sample} itself is differentiable. This is a milder condition, that holds for most distributions of interest, including those over discrete variables. Moreover, since this estimator minimizes the inclusive KL divergence, and not the exclusive KL divergence, there is smaller risk of learning a proposal that collapses to a single mode of a multi-modal posterior \cite{le2019revisiting}.
 
 
 
-% \iffalse
-% % Deep probabilistic programming libraries such as Edward \cite{tran2016edward}, Pyro \cite{bingham2018pyro}, and Probabilistic Torch \cite{siddharth2017learning}  extend deep learning frameworks with functionality for 
-% % Deep probabilistic models commonly combine a generative model with an inference model that approximates the Bayesian posterior. Both models are parameterized using neural networks, which are trained using stochastic gradient descent by optimize a lower or upper bound on the log marginal likelihood. Training an inference network to perform amortized inference can be equivalently understood as a form of variational inference or adaptive importance sampling.
 
-% Deep probabilistic models most commonly have the form of standard variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In these architectures, the  generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by an neural network, often referred to as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code.
-% Training these inference network to perform amortized inference can be equivalently understood as a form of adaptive importance sampling which gradually refines a variational proposal.
 
-% Deep probabilistic programming aims to enable more general designs that incorporate structured priors for tasks such as multiple object detection \cite{eslami2016attend}, language modeling \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. In these domains, a prior can incorporate useful inductive biases, such as the requirement that object trajectories are smooth. These biases in turn can help guide a model to uncover patterns in the data in an unsupervised manner, and aid generalization in complex domains where the training data may not contain exemplars for all possible combinations of latent features.
-
-% %TODO: Needs reading
-% However, training structured models also poses challenges that are not encountered in unstructured problems. Standard VAEs rely on reparameterized gradient estimators that can often approximate the gradient with a single sample. Structured models are often inherently difficult to reparameterize, e.g. they may involve discrete structures which need to be relaxed in order to compute pathwise derivatives. A more general approach is to approximate the gradient of an expectation with a Monte Carlo estimate (see \cite{mohamed2019monte} for a recent review). 
-% Unfortunately, these estimators can have a high variance in models where latent variables are high-dimensional and/or strongly correlated. Owing to these limitations, models that are trained using standard VAE objectives often consider relatively small-scale problems, such as tracking $\le 2$ objects over the course of 10 frames \cite{kosiorek2018sequential}, or assigning $\le 10$ sentences in a review to distinct aspects \cite{esmaeili2019structured}. 
-
-% In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. 
-% We are particularly interested in the frequently arising cases of models that are characterized by a combinations of \emph{local variables}, such as the time-dependent position of an object, and \emph{global variables}, such as the shape of the object. In this type of model, it is often the case that knowledge of the local variables can help us make predictions about global variables and vice versa; If we know the shape of an object, then it should be easier to identify its location in an image. Conversely, if we know the position of an object in each frame, then we can more readily infer its shape.
-
-% In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. These methods are similar in spirit to work by Johnson et al.~\cite{johnson2016composing}, who developed methods for  conjugate-exponential models with a neural likelihood. In this setting, we can perform inference using variational expectation maximization (EM) algorithms \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that exploit conjugacy and conditional independence to derive closed-form updates to blocks of variables. The advantage of these approaches is that they are highly computationally efficient; variational EM can often converge in a small number of iterations and easily scales to much larger number of variables. Unfortunately, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
-
-% To overcome the limitations imposed by conjugate-exponential family models, we here develop a more general approach. Rather than requiring exact EM updates we develop an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we define minimize the inclusive KL divergence w.r.t. the exact conditional posterior. We refer to the resulting class of methods as \emph{amortized population Gibbs} samplers, since the proposals approximate Gibbs updates.
-
-% The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
-
-% One of the challenges in designing networks that parameterize conditional proposals is network outputs need to appropriately account for the amount of data on which we are conditioning; The conditional posterior on the mean for a cluster with a large number of points is more tightly peaked than that of a cluster with a small number of points. To address this, we propose a class of networks that we refer to as \emph{neural sufficient statistics}, which are parameterized in a manner that is additive in the local variables, much like the sufficient statistics in conjugate-exponential families.
-
-% Our experiments show that learned proposals converge to the true conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that amortized Gibbs methods serve as a basis for scalable inference in structured deep generative models, including mixtures with neural likelihoods and unsupervised tracking models. Both of these tasks are representative of the current state-of-the art in unsupervised approaches for learning structured deep generative models.
-
-% Deep probabilistic programming libraries such as Edward \cite{tran2016edward}, Pyro \cite{bingham2018pyro}, and Probabilistic Torch \cite{siddharth2017learning}  extend deep learning frameworks with functionality for deep probabilistic models which combine a generative model with an inference model that approximates the Bayesian posterior.
-% Both models are parameterized using neural networks, which are trained using stochastic gradient descent by optimize a lower or upper bound on the log marginal likelihood. Training an inference network to perform amortized inference can be equivalently understood as a form of variational inference or adaptive importance sampling.
-
-% At present, deep probabilistic models most commonly have the form of standard variational autoencoders (VAEs) \cite{kingma2013auto-encoding, rezende2014stochastic}. In these architectures, the  generative model combines an unstructured prior (e.g.~a spherical Gaussian) with a likelihood that is parameterized by an expressive neural network, often referred to as a decoder. The inference network, known as an encoder, maps input data (e.g.~an image or sentence) onto an embedding vector, also known as the latent code.
-
-% Deep probabilistic programming aims to enable more general designs that incorporate structured priors for tasks such as multiple object detection \cite{eslami2016attend}, language modeling \cite{esmaeili2019structured}, or object tracking \cite{kosiorek2018sequential}. In these domains, a prior can incorporate useful inductive biases, such as the requirement that object trajectories are smooth. These biases in turn can help guide a model to uncover patterns in the data in an unsupervised manner, and aid generalization in complex domains where the training data may not contain exemplars for all possible combinations of latent features.
-
-% However, training structured models also poses challenges that are not encountered in unstructured problems. To optimize a lower or an upper bound, we need to approximate the gradient of an expectation with a Monte Carlo estimate (see \cite{mohamed2019monte} for a recent review). Standard VAEs rely on reparameterized estimators that can often approximate the gradient with a single sample. Unfortunately, these estimators can have a high variance in models where latent variables are high-dimensional and/or strongly correlated. Owing to these limitations, models that are trained using standard VAE objectives often consider relatively small-scale problems, such as tracking $\le 2$ objects over the course of 10 frames \cite{kosiorek2018sequential}, or assigning $\le 10$ sentences in a review to distinct aspects \cite{esmaeili2019structured}. 
-
-% In this paper, we develop methods for amortized inference that are designed to scale to structured models with 100s of latent variables. We are particularly interested in the frequently arising cases of models that  are characterized by a combinations of \emph{local variables}, such as the time-dependent position of an object, and \emph{global variables}, such as the shape of the object. In this type of model, it is often the case that knowledge of the local variables can help us make predictions about global variables and vice versa; If we know the shape of an object, then it should be easier to identify its location in an image. Conversely, if we know the position of an object in each frame, then we can more readily infer its shape.
-
-% The methods that we develop in this paper are similar in spirit to work by Johnson et al.~\cite{johnson2016composing}, who developed methods for  conjugate-exponential models with a neural likelihood. In this setting, we can perform inference using variational expectation maximization (EM) algorithms \cite{beal2003variational,bishop2006pattern,wainwright2008graphical} that exploit conjugacy and conditional independence to derive closed-form updates to blocks of variables. The advantage of these approaches is that they are highly computationally efficient; variational EM can often converge in a small number of iterations and easily scales to much larger number of variables. Unfortunately, variational EM is also model-specific, difficult to implement, and only applicable to a restricted class of conjugate-exponential models.
-
-% To overcome the limitations imposed by conjugate-exponential family models, we here develop a more general approach. Rather than requiring exact EM updates we develop an importance sampling method that employs conditional proposals to iterate between updates to blocks of variables. To train these proposals, we define a a variational method that minimizes the inclusive KL divergence between the proposal update and the exact conditional posterior. We refer to the resulting class of methods as \emph{amortized Gibbs} samplers, since the proposals approximate Gibbs updates.
-
-% The variational objective that we derive is not computable, since the exact Gibbs updates are in general intractable. However, we can nonetheless derive a Monte Carlo estimator for its gradient. Building on a recent body of work that employs importance samplers to train variational distributions \cite{burda2016importance,le2018auto-encoding,maddison2017filtering,naesseth2018variational}, we develop a sequential Monte Carlo sampler \cite{delmoral2006sequential} that combines approximate Gibbs updates with resampling steps in order to construct high quality proposals, which serve both to compute gradient estimates at train time and to perform inference at test time. We demonstrate correctness of the proposed sampler by  proving that samples are properly weighted relative to the generative model \cite{naesseth2015nested}.
-
-% One of the challenges in designing networks that parameterize conditional proposals is network outputs need to appropriately account for the amount of data on which we are conditioning; The conditional posterior on the mean for a cluster with a large number of points is more tightly peaked than that of a cluster with a small number of points. To address this difficulty, we propose a class of networks that we refer to as \emph{neural sufficient statistics}, which define parameterizations of proposals in a manner that is additive in the local variables, much like the sufficient statistics in conjugate-exponential families.
-
-% Our experiments show that learned proposals converge to the true conditional posteriors in Gaussian mixture models, where the Gibbs updates can be computed in closed form. Moreover we establish that amortized Gibbs methods serve as a basis for scalable inference in structured deep generative models, including mixtures with neural likelihoods and unsupervised tracking models. Both of these tasks are representative of the current state-of-the art in unsupervised approaches for learning structured deep generative models.
-% \fi 
-
+\iffalse
 \section{Amortized Population Gibbs Samplers}
 \label{sec:amortized-gibbs}
 We are interested in the task of jointly training a generative model $p_\q(x, z)$ by maximizing its marginal likelihood $p_\q(x)$ and learning an inference model $q_\f(z \mid x)$ that approximates the posterior $p_\q(z \mid x)$. Like most amortized inference approaches, we assume that we can sample from a (possibly implicit) distribution $\hat{p}(\x)$ that either takes the form of an empirical distribution over training data or a data simulator.
@@ -361,30 +402,30 @@ The estimator in Equation~\ref{eq:grad-self-normalized} sidesteps the need for v
 % Standard reweighted wake-sleep methods generate proposals from an encoder $z \sim q_\f(z \mid x)$ and compute weights $w = p_\q(x, z) / q_\f(z \mid x)$. A well-known limitation of this type of naive importance sampling strategy is that the computed weights will have a very high variance in models with high-dimensional and/or correlated latent variables, which in turn implies a high bias of the estimator. There is a very broad class of importance sampling strategies that can be employed to reduce the variance of importance weights. If we replace the naive importance sampler in reweighted wake-sleep with a more sophisticated sampling strategy, then this both improves the quality of gradient estimates at training, and the quality of inference results at test time.
 % \subsection{Adaptive Importance Sampling Framework}
 
-
-The proposed training method for learning the Gibbs conditionals is slow and their application during the test time results in a poor posterior approximation.
-A well-known limitation of importance sampling is that the computed weights have high variance in models with high-dimensional and/or correlated variables such as models with a hierarchical structure.
-Thus, learning based on gradients estimated by importance sampling in \eqref{eq:grad-self-normalized} and \eqref{eq:grad-theta} is slow.
-During test time, the sampler will only result in a good full posterior approximation if the learned Gibbs conditionals match the posterior conditionals exactly~\eqref{eq:gibbs-invariance}.
-
-% Training the Gibbs conditionals using importance sampling is slow due to high variance gradient estimation and if during test time these conditionals do not match the posterior conditionals exactly, the resulting Markov Chain will be a poor approximation to the full posterior.
-
-
-% To construct high quality samples using learned proposals, we need to employ an iterative sampling strategy. This is challenging because each single block update $q_\f(z_b' | x, z_{-b})$ needs to leave the target density invariant (see Equation~\ref{eq:gibbs-invariance}).
-% In addition, this sampling framework needs to consistently improve the inference results as we expend more computation at test time, while it can be used to reliably train these proposals with less computation budget, i.e.~less number of samples and updates.
-% While training should be reliable with relatively little computation, as measured by number of iterations and number of samples per iteration, increasing computation must improve learning speed during training time and inference performance during test time.
-
-% On the other hand, training these proposals also some sophisticated importance sampling strategy. 
-% Approximating the gradient presents a chicken-and-egg problem; we need samples from the posterior to compute a Monte Carlo estimate of the gradient, but generating these samples is precisely what we are hoping to use learned proposals for in the first place. 
+%%%%%%%%Tuan Anh Edit
+% The proposed training method for learning the Gibbs conditionals is slow and their application during the test time results in a poor posterior approximation.
 % A well-known limitation of importance sampling is that the computed weights have high variance in models with high-dimensional and/or correlated variables such as models with a hierarchical structure.
 % Thus, learning based on gradients estimated by importance sampling in \eqref{eq:grad-self-normalized} and \eqref{eq:grad-theta} is slow.
+% During test time, the sampler will only result in a good full posterior approximation if the learned Gibbs conditionals match the posterior conditionals exactly~\eqref{eq:gibbs-invariance}.
+
+%%%%%Hao Edit
+To construct high quality samples using learned proposals, we need to employ an iterative sampling strategy. This is challenging because each single block update $q_\f(z_b' | x, z_{-b})$ needs to leave the target density invariant (see Equation~\ref{eq:gibbs-invariance}).
+In addition, this sampling framework needs to consistently improve the inference results as we expend more computation at test time, while it can be used to reliably train these proposals with less computation budget, i.e.~less number of samples and updates.
+While training should be reliable with relatively little computation, as measured by number of iterations and number of samples per iteration, increasing computation must improve learning speed during training time and inference performance during test time.
+
+Training these proposals also requires some sophisticated importance sampling strategy. 
+Approximating the gradient presents a chicken-and-egg problem; we need samples from the posterior to compute a Monte Carlo estimate of the gradient, but generating these samples is precisely what we are hoping to use learned proposals for in the first place. 
+A well-known limitation of importance sampling is that the computed weights have high variance in models with high-dimensional and/or correlated variables such as models with a hierarchical structure.
+Thus, learning based on gradients estimated by importance sampling in \eqref{eq:grad-self-normalized} and \eqref{eq:grad-theta} is slow.
 
 % To train APG proposals using the estimator in Equation~\ref{eq:grad-self-normalized}, we need to employ some form of importance sampling strategy that targets at the posterior. 
 
-To address both of these challenges, we use the Gibbs conditionals as proposals of a sequential Monte Carlo (SMC) sampler~\citep{delmoral2006sequential}.
-% To solve this, we will use the proposals to define a sequential Monte Carlo (SMC) sampler \citep{delmoral2006sequential}.
-%SMC methods reduce the variance of importance weights by decomposing a high-dimensional sampling problem into a sequence of lower-dimensional problems \cite{}. 
-SMC methods \cite{doucet2001sequential} combine two basic ideas. The first is sequential importance sampling, which decomposes a proposal for a sequence of variables into a sequence of conditional proposals. The second is resampling, which selects partial proposals with probability proportional to their weights in order to improve the overall sample quality. Most commonly, SMC methods are used in the context of state space models to generate proposals for a sequence of variables by proposing one variable at a time. SMC \emph{samplers} (see  Algorithm~\ref{alg:smcs}) are a subclass of SMC methods that interleave resampling with the application of a transition kernel, which is sometimes also referred to as \emph{resample-move} SMC. 
+% To address these challenges, we use the Gibbs conditionals as proposals of a sequential Monte Carlo (SMC) sampler~\citep{delmoral2006sequential}.
+To address these challenges, we will use the proposals to define a sequential Monte Carlo (SMC) sampler \citep{delmoral2006sequential}.
+% SMC methods reduce the variance of importance weights by decomposing a high-dimensional sampling problem into a sequence of lower-dimensional problems. 
+SMC methods \cite{doucet2001sequential} combine two basic ideas. The first is sequential importance sampling, which decomposes a proposal for a sequence of variables into a sequence of conditional proposals. The second is resampling, which selects partial proposals with probability proportional to their weights in order to improve the overall sample quality. 
+% Most commonly, SMC methods are used in the context of state space models to generate proposals for a sequence of variables by proposing one variable at a time. 
+SMC \emph{samplers} (see  Algorithm~\ref{alg:smcs}) are a subclass of SMC methods that interleave resampling with the application of a transition kernel, which is sometimes also referred to as \emph{resample-move} SMC. 
 
 The distinction between SMC methods for state space models and SMC samplers is subtle but important. Whereas the former generate proposals for a sequence of variables $z_{1:t}$ by proposing $z_t \sim q(z_t \mid z_{1:t-1})$ to \emph{extend} the sample space at each iteration, SMC samplers can be understood as an importance sampling analogue to Markov chain Monte Carlo (MCMC) methods \cite{brooks2011handbook}, which construct a Markov chain $z^{1:k}$ by generating a proposal $q(z^k \mid z^{k-1})$ from a transition kernel at each iteration.
 
@@ -520,6 +561,7 @@ We refer to this implementation of a SMC sampler as an amortized population Gibb
   \Return $g_\phi$, $g_\theta$\Comment{Output: gradient}
 \end{algorithmic}
 \end{algorithm}
+\fi
 \section{Neural Sufficient Statistics}
 Gibbs sampling strategies that sample from exact conditionals rely on conjugacy relationships. Typically, we assume a prior and likelihood that can both be expressed as exponential families
 \begin{align*}
@@ -613,6 +655,7 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \caption{Single samples in (\textbf{a}) GMM instances with $N=100$ data points and (\textbf{b}) DMM instances with $N=600$ data points. The left columns show the data sets, the subsequent columns show inference results by RWS, followed by results after $K$ APG updates. In addition the right column in (\textbf{b}) DMM  shows reconstructions from the deep generative model.}
   \label{fig:samples-mixture}
 \end{figure*}
+\iffalse
 \section{Related Work}
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{marino2018iterative}. 
 % Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. 
@@ -636,7 +679,7 @@ Moreover, both methods perform a joint update on all variables while we are cons
 %% - learns block conditionals using sleep loss
 %% - focus on conditional-sleep
 \citet{wang2018meta} develop a meta-learning approach to learn Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z \sim p(x, z)$ from the true generative model $p(x,z)$, which means gradients can be estimated using a sleep-phase Monte Carlo estimator. This circumvents the need for self-normalized estimators of the form in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Similar to our work, the approach by \citet{wang2018meta} minimizes the inclusive KL, but uses the learned conditionals to directly define an (approximate) MCMC sampler, rather than using them as proposals in an SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
-
+\fi
 
 
 
@@ -676,7 +719,7 @@ We employ a variational distribution that updates the global variables $q_\f(\mu
 We train our APG samplers on 20,000 GMM instances with $I = 3$ clusters and $N = 60$ data points with fixed hyperparameters ($\mu_0 = 0$, $\nu_0 = 0.2$, $\alpha_0 = 2$, $\beta_0 = 2$). We use $20$ GMM instances per batch, $K=5$ sweeps, $L=10$ particles, and $\mathrm{lr} = 2.5\times10^{-4}$ learning rate for $2\times10^5$ iterations.
 \begin{figure}[t!]
 \centering
-\includegraphics[width=\columnwidth]{figures/convergence_gmm_hmc1x.pdf}
+\includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
   \caption{Convergence of log joint $\log p(x, z)$ as a function of number of sweeps in one GMM instance. Here APG sampler and Gibbs sampler are perform using the same computation budget, while BPS uses 100 times as many particles as them, and HMC method are run with 1, 5, 10 times as many computation budget (i.e.~1, 5, 10 leapfrog steps) as the first two methods.}
   \label{fig:convergence-gmm}
 \end{figure}
@@ -831,7 +874,7 @@ We train our model on 60000 bouncing MNIST instances, each of which contains $D=
 We show that the scalability of APG sampler by testing the model on datasets up to $T=100$ time steps and $D=5$ digits. Figure~\ref{mnist-qualitative} shows the inference and reconstruction using single samples from the variational distribution (see Appendix \ref{appendix:full-recons} for results with full time steps). 
 Qualitatively, we see that the digit trajectories $\z_{1:D, 1:T}^{\mathrm{where}}$ and latent variables $\z_{1:D}^{\mathrm{what}}$ are inferred well.
 
-To see how much more we gain by running APG sampler, we compute the average log joint density $\log p_\q (x, z)$ over 10000 test sets, each of which consists of $T=100$ time steps and $D =5$ digits (see Table~\ref{table:log-joint-all}). 
+Table~\ref{table:log-joint-all} shows the average log joint density $\log p_\q (x, z)$ over 10000 test-time video instances with $T=100$ time steps and $D =5$ digits. 
 
 
 \section{Conclusion}
