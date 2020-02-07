@@ -466,7 +466,7 @@ By defining an initial proposal $q^1(z^1)$ and a sequence of conditional proposa
     \frac{\gamma^k(z^{1:k})}{\gamma^{k-1}(z^{1:k-1}) q^k(z^k \mid z^{1:k-1})},
 \end{align*}
 where the initial weight is defined as $w^1 = \gamma^1(z^1) / q^1(z^1)$.
-This construction ensures that, at the $k$-th step we have a weight $w^k$ w.r.t. the intermediate density $\gamma^k(z^{1:k})$ of the form (see Appendix~\ref{appendix:sis-weight}. for a full derivation)
+This construction ensures that, at the $k$-th step we have a weight $w^k$ w.r.t. the intermediate density $\gamma^k(z^{1:k})$. Unrolling the recursive update the weight takes the following form (see Appendix~\ref{appendix:sis-weight} for a complete derivation):
 \begin{align*}
     w^k
     =
@@ -474,18 +474,18 @@ This construction ensures that, at the $k$-th step we have a weight $w^k$ w.r.t.
          {q^1(z^1) \prod_{k'=2}^k q^{k'}(z^{k'} \mid z^{1:k'-1})}.
 \end{align*}
 
-We will now consider a specific sequence of intermediate densities that are defined using a reverse kernel $r(z' \mid z)$
+In the following we will consider a sequence of intermediate target densities defined by a \emph{reverse kernel $r(z' \mid z)$:
 \begin{align*}
     \gamma^k(z^{1:k})
     =
     p_\q(x,z^k) \prod_{k'=2}^{k} r(z^{k'-1} \mid z^{k'})
     .
 \end{align*}
-This defines a density on an \emph{extended space} such that 
+This defines a density on an \emph{extended space} which admits the marginal density
 \begin{align*}
     \gamma^k(z^k) = \int \gamma^k(z^{1:k}) \: dz^{1:k-1} = p_\q(x, z^k).
 \end{align*}
-This means that at each step $k$, we can treat the preceding samples $z^{k-1}$ as \emph{auxiliary variables}; if we generate a proposal $z^{1:k}$ and simply disregard $z^{1:k-1}$, then the pair $(w^k, z^k)$ is a valid importance sample relative to $p_\q(z^k \mid x)$. If we additionally condition proposals on $x$, the incremental weight for this particular choice of target densities is
+Therefore, at each step $k$, we can treat the preceding samples $z^{k-1}$ as \emph{auxiliary variables}; if we generate a proposal $z^{1:k}$ and simply disregard $z^{1:k-1}$, then the pair $(w^k, z^k)$ is a valid importance sample relative to $p_\q(z^k \mid x)$. If we additionally condition proposals on $x$, the incremental weight for this particular choice of target densities is
 \begin{align}
     \label{eq:incremental-weight-forward-reverse}
     v^k 
@@ -494,7 +494,7 @@ This means that at each step $k$, we can treat the preceding samples $z^{k-1}$ a
          {p_\q(x,z^{k-1}) \: q(z^{k} \mid  z^{k-1})}
     .
 \end{align}
-This construction is valid for \emph{any} proposal kernel $q(z^k \mid z^{k-1})$ and reverse kernel $r(z^{k-1} \mid z^{k})$. The \emph{optimal} reverse kernel for a proposal is
+This construction is valid for \emph{any} proposal kernel $q(z^k \mid z^{k-1})$ and reverse kernel $r(z^{k-1} \mid z^{k})$. For a given \emph{forward kernel} The \emph{optimal} reverse kernel for a proposal is
 \begin{align*}
     r(z^{k-1} \mid  z^k)
     =   
@@ -948,12 +948,14 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \vspace{-1ex}
   \end{subfigure}
   \caption{Visualization of a single sample for (\textbf{a}) GMM instances with $N=100$ data points and (\textbf{b}) DMM instances with $N=600$ data points. The left columns show the data instance, the second column the inference result from RWS, and the subsequent columns the inference result after $K$ APG sweeps. In addition the rightmost column in (\textbf{b}) shows the reconstruction from the generative model.}
-  \vspace{-0.75em}
+  \vspace{-0.25em}
 %   \caption{Visualization of a single sample for (\textbf{a}) a GMM instance with $N=100$ data points and (\textbf{b}) a DMM instance with $N=600$ data points. The left columns show the data instance, the second column the inference result from RWS, and the subsequent columns the inference result after $K$ APG sweeps. In addition the rightmost column in (\textbf{b}) shows the reconstruction from the generative model.}
   \label{fig:samples-mixture}
 \end{figure*}
 
+\vspace{-1.5em}
 \section{Related Work}
+\vspace{-0.25em}
 
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{marino2018iterative}. 
 % Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. 
@@ -979,10 +981,9 @@ Moreover, both methods perform a joint update on all variables while we are cons
 \citet{wang2018meta} develop a meta-learning approach to learn Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z$ from the true generative model $p(x,z)$. This circumvents the need for self-normalized estimators in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Similar to our work, the approach by \citet{wang2018meta} minimizes the inclusive KL, but uses the learned conditionals to define an (approximate) MCMC sampler, rather than using them as proposals in a SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
 
 
-\vspace{-0.5em}
+\vspace{-0.25em}
 \section{Experiments}
 \label{sec:experiments}
-\vspace{-0.20em}
 
 We evaluate APG samplers in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned proposals converge to conditional posterior, and show that APG can outperform other iterative inference methods even when using a smaller computational budget. We next consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
@@ -997,11 +998,11 @@ To evaluate whether APG samplers can learn the exact Gibbs updates in conditiona
 \begin{align*}
     \mu_i, \tau_i &\sim \text{Normal-Gamma}(\mu_0, \nu_0, \alpha_0, \beta_0)
     , \,
-    i =1,2..,I \\
+    i =1,2..,I, \\
     c_n &\sim \mathrm{Cat}(\pi), \,
     x_n | c_n\!=\!i \sim \text{N}(\mu_i, 1 / \tau_i)
     , \,
-    n =1,2,..,N
+    n =1,2,..,N.
 \end{align*}
 In this model, the global variables $z^\textsc{g} = \{\mu_{1:I}, \tau_{1:I}\}$ are the mean and precision for each mixture component, whereas the local variables are the cluster assignments $z^\textsc{l} = \{c_{1:N}\}$. Conditioned on cluster assignments, the Gaussian likelihood $p(\x_{1:N} \mid z_{1:N}, \mu_{1:I}, \tau_{1:I})$ is conjugate to a normal-gamma prior $p(\mu_{1:I}, \tau_{1:I})$ with sufficient statistics $T(x_n, c_n)$ 
 \begin{align*}
@@ -1024,7 +1025,27 @@ We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and
 \end{figure}
 % We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
 
-Figure~\ref{fig:samples-gmm} shows a single sample in test instance with $N=100$ points. The sample is initialized from RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG converges within 12 sweeps in GMM with more number of variables than training instances.
+Figure~\ref{fig:samples-gmm} shows a single sample in test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG converges within 12 sweeps in GMM with more number of variables than training instances.
+
+\begin{table*}[b!]
+\centering
+\caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
+We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
+For the GMM the test corpus contains $20,000$ instances, each of which has $N=100$ data points; In the DMM the test corpus contains $20,000$ instances with $N=600$ data points per instance; In the bouncing MNIST experiment the test corpus contains $10,000$ instances each containing $T=100$ time steps and $D=5$ digits.}
+\vspace{0.5em}
+\addtolength{\tabcolsep}{-2pt} 
+\begin{tabularx}{\textwidth}{cccccccccc}
+    \toprule
+     & RWS & BPS & HMC-RWS & HMC-RWS & HMC-RWS & APG & APG & APG & GIBBS \\
+     & & K=20 & K=20, LF=1 & K=20, LF=5 & K=5, LF=10 & K=5 & K=10 & K=20 & K=20 \\
+    \midrule
+    GMM ($\times10^2$)& $-7.651$ & $-6.688$ & $-6.594$ & $-5.420$ & $-4.673$ & $-4.816$ & $-4.556$ & $-4.469$ & $-4.573$ \\
+    DMM ($\times10^3$) & $-3.172$ & $-4.204$ & $-2.185$ & $-2.184$ & $-2.184$ & $-2.050$ & $-2.040$ & $-2.035$ & -- \\
+    BC-MNIST ($\times10^5$) & $-1.673$ & $-1.884$ & $-1.538$ & $-1.405$ & $-1.303$ & $-0.706$ & $-0.652$ & $-0.620$ & --\\
+    \bottomrule
+\end{tabularx}
+\label{table:log-joint-all}
+\end{table*}
 
 Furthermore, we compare the APG sampler with other iterative inference methods, all of which start with initial proposals learned in APG sampler (to make fair comparison): (1) We apply true Gibbs sampling to verify that the learned proposals converge to conditional posterior. 
 (2) We run bootstrapped population sampling (BPS) where we employ the APG sampling scheme but propose $\mu, \tau$ from the prior $p(\mu, \tau)$. This shows how much we improve by learning the proposals under the same sampling scheme. (3) We perform Hamiltonian Monte Carlo (HMC) method for continuous variables $\mu, \tau$ by marginalizing the discrete variables $c$, and Gibbs updates $p(c | x, \mu, \tau)$ for discrete variables. Figure~\ref{fig:convergence-gmm} shows that APG sampler outperforms even when we run HMC with 10 time 10 times as many computation budget; And learned proposals substantially improves on inference since BPS does not converge even with 100 times budget.
@@ -1045,25 +1066,8 @@ Furthermore, we compare the APG sampler with other iterative inference methods, 
   \caption{A single sample from variational distribution in one video instance with $T=100$ time steps and $D=5$ digits. The visualization is truncated by the first 15 time steps due to limited space (see Appendix~\ref{appendix:full-recons} for full time steps and Appendix~\ref{appendix:bmnist-comparison-rws} for more examples). The sample is initialized from RWS (top) and updated by $K=10$ APG sweeps (bottom). The APG sampler improves the inference results in tracking and also learns better MNIST digit embedding that gives better reconstruction.}
   \label{mnist-qualitative}
 \end{figure*}
-\begin{table*}[t!]
-\centering
-\caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
-We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
-For the GMM the test corpus contains $20,000$ instances, each of which has $N=100$ data points; In the DMM the test corpus contains $20,000$ instances with $N=600$ data points per instance; In the bouncing MNIST experiment the test corpus contains $10,000$ instances each containing $T=100$ time steps and $D=5$ digits.}
 
-\addtolength{\tabcolsep}{-2pt} 
-\begin{tabularx}{\textwidth}{cccccccccc}
-    \toprule
-     & RWS & BPS & HMC-RWS & HMC-RWS & HMC-RWS & APG & APG & APG & GIBBS \\
-     & & K=20 & K=20, LF=1 & K=20, LF=5 & K=5, LF=10 & K=5 & K=10 & K=20 & K=20 \\
-    \midrule
-    GMM ($\times10^2$)& $-7.651$ & $-6.688$ & $-6.594$ & $-5.420$ & $-4.673$ & $-4.816$ & $-4.556$ & $-4.469$ & $-4.573$ \\
-    DMM ($\times10^3$) & $-3.172$ & $-4.204$ & $-2.185$ & $-2.184$ & $-2.184$ & $-2.050$ & $-2.040$ & $-2.035$ & -- \\
-    BC-MNIST ($\times10^5$) & $-1.673$ & $-1.884$ & $-1.538$ & $-1.405$ & $-1.303$ & $-0.706$ & $-0.652$ & $-0.620$ & --\\
-    \bottomrule
-\end{tabularx}
-\label{table:log-joint-all}
-\end{table*}
+
 % \vspace{-1.0em}
 % \begin{table*}[t!]
 % \centering
@@ -1081,8 +1085,9 @@ For the GMM the test corpus contains $20,000$ instances, each of which has $N=10
 % \label{table:log-joint-all}
 % \end{table*}
 
-Moreover we compare the joint block update $\{\mu, \tau, c\}$ with one that decomposes blocks $\{\mu, \tau\}, \{c\}$, for varying number of sweeps (see Figure~\ref{fig:fixed-budget-gmm}). Here we compute the log joint distribution $\log p_\q(\x, z)$ as one metric, because the marginal $q_\f(z^k | x)$ is intractable and it is hard to compute an lower/upper bound at each sweep. Also we assess the sample quality by computing the effective sample size
-\vspace{-1.0em}
+We compare joint block updates $\{\mu, \tau, c\}$ with separate that decomposes blocks $\{\mu, \tau\}, \{c\}$, for varying number of sweeps (see Figure~\ref{fig:fixed-budget-gmm}). Here we compute the log joint distribution $\log p_\q(\x, z)$ as one metric, because the marginal $q_\f(z^k | x)$ is intractable% and it is hard to compute an lower/upper bound at each sweep. Also 
+We assess additionally assess sample quality using the effective sample size
+\vspace{-0.5em}
 \begin{align*}
 % \label{ess-eq}
     \frac{\text{ESS}}{L} 
@@ -1112,8 +1117,9 @@ We employ a variational distribution that initializes samples by $q_\f(\mu, c, \
 Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{fig:samples-dgmm} shows visualization of a single sample from variational distribution in on DMM instance The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
 
 \subsection{Time Series Model -- Bouncing MNIST}
+
 Finally we consider the task of an unsupervised time series model, where our data is a corpus of video frames recording multiple bouncing MNIST digits. To demonstrate the scalability of APG samplers, we train both a deep generative model and a inference model with $60000$ video instances, each of which contains $T=10$ time steps and $D=3$ digits; Then we evaluate the model on test instances that contain $T=100$ time steps and $D=5$ digits. Our generative model has the form
-\vspace{-1.0em}
+%\vspace{-0.5em}
 \begin{align*}
     z^{\mathrm{what}}_{d} 
     &\sim 
@@ -1151,12 +1157,11 @@ Finally we consider the task of an unsupervised time series model, where our dat
 where $\z_{1:D}^{\mathrm{what}}$ are the latent code of digits, and $\z_{1:D, 1:T}^{\mathrm{where}}$ are time-dependent positions. ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a MLP decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on $z^{\mathrm{where}}_{d, t}$. 
 \begin{table}[t!]
     \centering
-    \caption{Mean squared error (MSE) between each test instance and its reconstruction across corpora (each has 5000 video instances) with different number of time steps $T$ and digits $D$.
-    APG sampler significantly improves the samples from RWS encoder, while HMC-RWS rarely has improvement.}
+    \caption{Mean squared error (MSE) between test instance and its reconstruction across corpora (each has 5000 video instances) with different number of time steps $T$ and digits $D$. All testings are performed using fixed budget $KL=1000$. APG sampler substantially improves the reconstruction (by improving sample quality of variables) from RWS encoder, compared with HMC-RWS.}
     \begin{tabularx}{\columnwidth}{ccccc}
     \toprule
-        & RWS & HMC10x & APG & APG \\
-        &  &  K=20 & K=10 & K=20 \\
+        & RWS & HMC-RWS & APG & APG \\
+        &  &  K=20, LF=10 & K=10 & K=20 \\
     \midrule
     D=5, T=20 & 265.1 & 261.2 & 117.7 & 103.8\\
     \hspace{0.5em}D=5, T=100 & 272.1 & 267.9  & 115.4 &  102.3\\
