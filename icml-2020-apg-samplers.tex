@@ -996,14 +996,14 @@ Results on each of these tasks constitute significant advances relative to the s
 
 \subsection{Evaluating APG Samplers with Baselines}
 \label{sec:baselines}
-In these 3 tasks we compare the APG samplers with multiple inference methods as baselines. The comparison is made under the same computation budget, which is defined as the number of times on evaluation of the log joint $p_\q(x, z)$. The first baseline is models trained by reweighted wake-sleep (RWS) methods, so that we can see the improvement by APG proposals. As testing, we run this baseline with $K \cdot L$ budget, same as the total in APG samplers.
+In these three tasks we compare the APG samplers with multiple inference methods as baselines. The comparison is made under the same computation budget, which is defined as the number of times on evaluation of the log joint $p_\q(x, z)$. The first baseline is models trained by reweighted wake-sleep (RWS) methods, so that we can see the improvement by APG proposals. As testing, we run this baseline with $K \cdot L$ budget, same as the total in APG samplers.
 
 
-As a means of assessing how much improvement achieved by the learned proposals, we implement the bootstrapped population sampler (BPS), which employs the exact APG sampling scheme but propose global (instance-level) variables from the prior $p(z)$. Since sampling from the prior is less likely to generate high-quality samples, we perform BPS with much more number of particles (i.e.~budget) within the comparison.
+As a means of assessing how much the learned proposals improved performance, we implement the bootstrapped population sampler (BPS), which employs the exact APG sampling scheme but proposes global (instance-level) variables from the prior $p(z)$. Since sampling from the prior is less likely to generate high-quality samples, we perform BPS with many more particles (i.e.~much more budget) for the comparison.
 
-We next consider one state-of-art baseline that combines variational inference with Markov chain Monte Carlo methods. One recent line of work by \citet{hoffman2017learning} is of our interest, but both the reparameterized gradient estimator and Hamiltonian Monte Carlo (HMC) algorithm in this approach are not applicable to to our mixture models, where discrete variables exist. In our third experiment we tried to train the tracking model using that approach, but due to the high-dimensional correlated variables, the HMC method cannot help the model to converge.  
+We next consider one state-of-art baseline that combines variational inference with Markov chain Monte Carlo methods. One recent line of work by \citet{hoffman2017learning} is of our interest, but both the reparameterized gradient estimator and Hamiltonian Monte Carlo (HMC) algorithm in this approach are not applicable to to our mixture models, where discrete variables exist. In our third experiment we tried to train the tracking model using that approach, but due to the high-dimensional correlated variables, the HMC method cannot help the model to converge.
 
-Alternatively, we augment the models trained by RWS with Hamiltonian Monte Carlo (HMC) methods, i.e. we initialize proposals from the trained RWS models and perform HMC updates for continuous variables; We still use the learned proposals for discrete variables if exists. We perform HMC with different 1, 5, 10 leapfrogs, i.e.~as giving the baseline more computation budget.
+Alternatively, we augment the models trained by RWS with Hamiltonian Monte Carlo (HMC) methods, i.e. we initialize proposals from the trained RWS models and perform HMC updates for continuous variables. We still use the learned proposals for discrete variables if they exist. We perform HMC with one, five, and ten leapfrogs, i.e.~as if giving the baseline more computation budget.
 
 
 \subsection{Gaussian Mixture Model}
@@ -1056,14 +1056,14 @@ We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
-  \caption{$\log p_\theta(x, z)$ as a function of number of sweeps for a GMM test instance. We perform APG sampler and Gibbs sampler using $L=100$ particles, BPS using $L=10,000$ particles (around $100\times$ the computation budget), HMC-RWS using $L=100$ particles and $1, 5, 10$ leapfrog steps (around $1, 5, 10\times$ the computation budget), respectively. To achive results comparable to APG and Gibbs samplers, HMC-RWS needs a $10\times$ larger sampling budget while BPS underperforms even with a $100\times$ budget.}
+  \caption{$\log p_\theta(x, z)$ as a function of number of sweeps for a GMM test instance. We perform APG sampler and Gibbs sampler using $L=100$ particles, BPS using $L=10,000$ particles (i.e.~$100\times$ the budget), HMC-RWS using $L=100$ particles and $1, 5, 10$ leapfrog steps (i.e.~$1, 5, 10\times$ the budget), respectively. To achive results comparable to APG and Gibbs samplers, HMC-RWS needs a $10\times$ larger computation budget while BPS underperforms even with a $100\times$ budget.}
   \label{fig:convergence-gmm}
 \end{figure}
 % We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
 
 Figure~\ref{fig:samples-gmm} shows a single sample in test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG converges within 12 sweeps in GMM with more number of variables than training instances.
 
-Moreover, we compare the APG samplers with baselines in section~\ref{sec:baselines}
+We compare the APG samplers with true Gibbs sampler and the baselines in section~\ref{sec:baselines}.
 
 
 \iffalse
@@ -1107,7 +1107,7 @@ Figure~\ref{fig:convergence-gmm} shows that the APG sampler outperforms even whe
 % \label{table:log-joint-all}
 % \end{table*}
 
-We compare joint block updates $\{\mu, \tau, c\}$ with separate that decomposes blocks $\{\mu, \tau\}, \{c\}$, for varying number of sweeps (see Figure~\ref{fig:fixed-budget-gmm}). Here we compute the log joint distribution $\log p_\q(\x, z)$ as one metric, because the marginal $q_\f(z^k | x)$ is intractable% and it is hard to compute an lower/upper bound at each sweep. Also 
+Moreover, we compare joint block updates $\{\mu, \tau, c\}$ with separate that decomposes blocks $\{\mu, \tau\}, \{c\}$, for varying number of sweeps (see Figure~\ref{fig:fixed-budget-gmm}). Here we compute the log joint distribution $\log p_\q(\x, z)$ as one metric, because the marginal $q_\f(z^k | x)$ is intractable% and it is hard to compute an lower/upper bound at each sweep. Also 
 We additionally assess sample quality using the effective sample size
 \vspace{-0.5em}
 \begin{align*}
