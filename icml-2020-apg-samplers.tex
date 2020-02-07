@@ -587,7 +587,21 @@ We refer to this implementation of a SMC sampler as an \emph{amortized populatio
 
 
 
-
+\section{Neural Sufficient Statistics}
+Gibbs sampling strategies that sample from exact conditionals rely on conjugacy relationships. We assume a prior and likelihood that can both be expressed as exponential families
+\begin{align*}
+    p(\x \mid \z) 
+    &= 
+    h(\x) \exp \{ 
+        \eta(\z)^\top \: T(\x)  
+        -\log A(\eta(\z)) \}, 
+    \\
+    p(\z ) 
+    &= 
+    h(\z) \exp \{ 
+        \lambda^\top T(\z) 
+        - \log A(\lambda) \}.
+\end{align*}
 where $h(\cdot)$ is a base measure, $T(\cdot)$ is a vector of sufficient statistics, and $A(\cdot)$ is a log normalizer. The two densities are jointly conjugate when $T(\z) = (\eta(\z), -\log A(\eta(\z)))$.
 In this case, the posterior distribution lies in the same exponential family as the prior.
 % \begin{align*}
@@ -658,21 +672,7 @@ A useful case arises when the data $\x = \{x_1, \ldots, x_N\}$ are independent c
 %     \lambda^\textsc{l}_n + T^\textsc{l}_\f(\x_n, \z^\textsc{g}).
 % \end{align*}
 
-\section{Neural Sufficient Statistics}
-Gibbs sampling strategies that sample from exact conditionals rely on conjugacy relationships. We assume a prior and likelihood that can both be expressed as exponential families
-\begin{align*}
-    p(\x \mid \z) 
-    &= 
-    h(\x) \exp \{ 
-        \eta(\z)^\top \: T(\x)  
-        -\log A(\eta(\z)) \}, 
-    \\
-    p(\z ) 
-    &= 
-    h(\z) \exp \{ 
-        \lambda^\top T(\z) 
-        - \log A(\lambda) \}.
-\end{align*}
+
 The advantage of this parameterization is it allows us to train approximate Gibbs updates for global variables in a manner that scales dynamically with the size of the dataset, and appropriately adjusts the posterior variance according to the amount of available data.
 \begin{figure*}[t!]
   \centering
@@ -736,7 +736,7 @@ We begin by analysing APG samplers on a Gaussian mixture model (GMM) as an exemp
 This experiment allows us to analytically compute the conditional posterior to verify if the learned proposals indeed converge to the Gibbs kernels.
 Here APG samplers outperform other iterative inference methods even when using a smaller computational budget. 
 % Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
-Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. We jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
+Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. We use APG samplers to jointly train the generative model and inference model and were able to perform accurate perform scalable inference to test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
 In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by \citet{srivastava2015unsupervised} to consider up to five individual digits, and learn both a deep generative model for videos and an inference model that performs tracking. At test time we show that APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. 
 
