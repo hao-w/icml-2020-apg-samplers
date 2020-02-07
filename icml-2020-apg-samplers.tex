@@ -733,7 +733,7 @@ Moreover, both methods perform a joint update on all variables, while we conside
 
 We evaluate APG samplers on three different tasks. 
 We begin by analysing APG samplers on a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. 
-The  we can analytically compute the conditional posterior and thus verify if the learned proposals indeed converge to the conditional posteriors. 
+This experiment allows us to analytically compute the conditional posteriors,  and thus verify if the learned proposals indeed converge to the conditional posteriors. 
 Here APG samplers outperform other iterative inference methods even when using a smaller computational budget. 
 %
 % Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
