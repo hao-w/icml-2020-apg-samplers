@@ -465,8 +465,8 @@ By defining an initial proposal $q^1(z^1)$ and a sequence of conditional proposa
     = w^k
     \frac{\gamma^k(z^{1:k})}{\gamma^{k-1}(z^{1:k-1}) q^k(z^k \mid z^{1:k-1})},
 \end{align*}
-with initial weight $w^1 = \gamma^1(z^1) / q^1(z^1)$.
-This construction ensures that, at step $k$ in the sequence, we have a weight $w^k$ relative to the intermediate  density $\gamma^k(z^{1:k})$ of the form (see Appendix~\ref{appendix:sis-weight} for a full derivation)
+where the initial weight is defined as $w^1 = \gamma^1(z^1) / q^1(z^1)$.
+This construction ensures that, at the $k$-th step we have a weight $w^k$ w.r.t. the intermediate density $\gamma^k(z^{1:k})$ of the form (see Appendix~\ref{appendix:sis-weight} for a full derivation)
 \begin{align*}
     w^k
     =
@@ -948,10 +948,13 @@ The advantage of this parameterization is it allows us to train approximate Gibb
   \vspace{-1ex}
   \end{subfigure}
   \caption{Visualization of a single sample for (\textbf{a}) GMM instances with $N=100$ data points and (\textbf{b}) DMM instances with $N=600$ data points. The left columns show the data instance, the second column the inference result from RWS, and the subsequent columns the inference result after $K$ APG sweeps. In addition the rightmost column in (\textbf{b}) shows the reconstruction from the generative model.}
+  \vspace{-0.75em}
 %   \caption{Visualization of a single sample for (\textbf{a}) a GMM instance with $N=100$ data points and (\textbf{b}) a DMM instance with $N=600$ data points. The left columns show the data instance, the second column the inference result from RWS, and the subsequent columns the inference result after $K$ APG sweeps. In addition the rightmost column in (\textbf{b}) shows the reconstruction from the generative model.}
   \label{fig:samples-mixture}
 \end{figure*}
+
 \section{Related Work}
+
 Our work fits into a line of recent methods for deep generative modeling that seek to improve inference quality, either by introducing auxiliary variables~\cite{maaloe2016auxiliary, ranganath2016hierarchical}, or by performing iterative updates~\cite{marino2018iterative}. 
 % Our specific approach to learning block proposals is related to a number of methods that, in some way or other, combine transition kernels with variational inference. 
 Work by \citet{hoffman2017learning} applies Hamiltonian Monte Carlo to samples that are generated from the encoder, which serves to improve the gradient estimate w.r.t.~$\theta$ (Equation~\ref{eq:grad-theta}), while learning the inference network using a standard reparameterized ELBO objective. 
@@ -976,10 +979,12 @@ Moreover, both methods perform a joint update on all variables while we are cons
 \citet{wang2018meta} develop a meta-learning approach to learn Gibbs block conditionals. This work assumes a setup in which it is possible to sample $x, z$ from the true generative model $p(x,z)$. This circumvents the need for self-normalized estimators in Equation~\ref{eq:grad-self-normalized}, which are necessary when we additionally wish to learn the generative model. Similar to our work, the approach by \citet{wang2018meta} minimizes the inclusive KL, but uses the learned conditionals to define an (approximate) MCMC sampler, rather than using them as proposals in a SMC sampler. This work also has a somewhat different focus from ours, in that it primarily seeks to learn block conditionals that have the potential to generalize to previously unseen graphical models.
 
 
-
+\vspace{-0.5em}
 \section{Experiments}
 \label{sec:experiments}
-We evaluate APG samplers in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned proposals converge to conditional posterior, and show that APG can outperform other iterative inference methods even when using much less computation budget. We next consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
+\vspace{-0.20em}
+
+We evaluate APG samplers in 3 tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned proposals converge to conditional posterior, and show that APG can outperform other iterative inference methods even when using a smaller computational budget. We next consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
 In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by \citet{srivastava2015unsupervised} to consider up to 5 individual digits, and learn both a deep generative model for videos and an inference model that performs tracking. At test time we show that APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. 
 
