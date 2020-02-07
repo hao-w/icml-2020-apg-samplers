@@ -733,11 +733,10 @@ Moreover, both methods perform a joint update on all variables, while we conside
 
 We evaluate APG samplers on three different tasks. 
 We begin by analysing APG samplers on a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. 
-This experiment allows us to analytically compute the conditional posteriors,  and thus verify if the learned proposals indeed converge to the conditional posteriors. 
+This experiment allows us to analytically compute the conditional posterior to verify if the learned proposals indeed converge to the Gibbs kernels.
 Here APG samplers outperform other iterative inference methods even when using a smaller computational budget. 
-%
 % Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
-Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
+Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. We jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
 In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by \citet{srivastava2015unsupervised} to consider up to five individual digits, and learn both a deep generative model for videos and an inference model that performs tracking. At test time we show that APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. 
 
@@ -1708,7 +1707,16 @@ We visualize the inference results and reconstruction from the APG sampler and r
 \includegraphics[width=150mm]{figures/bmnist-5digits-samples-with-rws-4.pdf}
 \caption{Example 3.}
 \end{figure*}
-
+\newpage
+\section{Analytical inclusive KL divergence during Training in GMM}
+\label{appendix-kl-gmm-training}
+Here we use different block update strategies to train the GMM with the same computational budget. The converge plot is as follows:
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=170mm]{figures/kl_training_gmm.pdf}
+    \caption{Inclusive KL divergence as a function of gradient steps. Each model is trained with 20000 instances, $K\cdot L=$}
+    \label{fig:my_label}
+\end{figure}
 
 \newpage
 \section{Inference Results and Reconstruction on large time steps Bouncing MNIST}
