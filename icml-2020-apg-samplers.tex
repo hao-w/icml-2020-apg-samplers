@@ -277,7 +277,7 @@ Here we can compute a self-normalized gradient estimator using samples $z \sim q
 \end{align}
 This gradient estimator has a number of advantages over the estimator used in standard VAEs \cite{le2019revisiting}. Notably, it only requires that the \emph{proposal density} is differentiable, whereas reparameterized estimators require that the \emph{sample} itself is differentiable. This is a milder condition that holds for most distributions of interest, including those over discrete variables. Moreover, minimizes the inclusive KL puts us at smaller risk of learning a proposal that collapses to a single mode of a multi-modal posterior \cite{le2019revisiting}. 
 
-The caveat of the gradient estimator in Equation~\ref{eq:grad-phi-rws} is that its variance crucially depends on the variance of the importance weights and hence the quality of our variational proposal, i.e. how well it approximates the posterior. In the following we are interested in the task of jointly training an inference model $q_\f(z \mid x)$ that approximates the posterior $p_\q(z \mid x)$ and a generative model, $p_\q(x, z)$, which we train by maximizing its marginal likelihood $p_\q(x)$. 
+The caveat of the gradient estimator in Equation~\ref{eq:grad-phi-rws} is that its variance crucially depends on the variance of the importance weights and hence the quality of our variational proposal, i.e. how well the variational proposal approximates the posterior. In the following we are interested in the task of jointly training an inference model $q_\f(z \mid x)$ that approximates the posterior $p_\q(z \mid x)$ and a generative model, $p_\q(x, z)$, which we train by maximizing its marginal likelihood $p_\q(x)$. 
 
 % \subsection{Sequential Monte Carlo Samplers}
 % \label{sec:background-smc-samplers}
@@ -340,9 +340,10 @@ To learn each of the block proposals $q_\f(z_b \mid x, z_{-b})$ we will minimize
     \biggl[
     \underbrace{
         \text{KL}\left(
-            p_\q(z_{b} | x, z_{-b})
+            p_\q(z_{b}\, |\, x, z_{-b})
             ||
-            q_\f(z_{b} | x, z_{-b})
+            q_\f(z_{b}\, |\, x, z_{-b})
+            %equation space hacking DONT'T replace with \mid
         \right)
     }_{\mathcal{K}_b(\f)}
     \biggr]
@@ -350,7 +351,7 @@ To learn each of the block proposals $q_\f(z_b \mid x, z_{-b})$ we will minimize
 \end{align}
 Unfortunately, this objective is intractable, since we are not able to evaluate the density of the true marginal $p_\q(z_{-b} \mid x)$, nor that of the conditional $p_\q(z_{b} \mid z_{-b}, x)$. 
 % This also prevents us from computing an upper bound to $\log p_\theta(x)$ which is a proxy for the model quality.
-As we will discuss in Section~\ref{sec:experiments}, this has implications for the evaluation of learned proposals, since we cannot compute a lower or upper bound on the log marginal likelihood as in other variational methods. However, it nonetheless possible to approximate the gradient of the objective 
+As we will discuss in Section~\ref{sec:experiments}, this has implications for the evaluation of the learned proposals, since we cannot compute a lower or upper bound on the log marginal likelihood like in other variational methods. However, it is nonetheless possible to approximate the gradient of the objective 
 \begin{align*}
     -\nabla_\f \mathcal{K}_b(\f)
     % &=
@@ -372,7 +373,7 @@ As we will discuss in Section~\ref{sec:experiments}, this has implications for t
     \log q_\f(z_{b} \,|\, x, z_{-b})
     \right].
 \end{align*}
-We can estimate this gradient using any Monte Carlo method that generates samples $z \sim p_\q(z \mid x)$ from the posterior. In the next section, we will use the learned proposals to define an importance sampler, which we then use to compute an self-normalized estimator of the gradient from weighted samples $\{(w^l, z^l)\}_{l=1}^L$, 
+We can estimate this gradient using any Monte Carlo method that generates samples $z \sim p_\q(z \mid x)$ from the posterior. In the next section, we will use the learned proposals to define an importance sampler, which we will use to obtain a set of weighted samples $\{(z^l_b, z^l_{-b})\}_{l=1}^L$ to compute a self-normalized gradient estimate
 \begin{align}
     \label{eq:grad-self-normalized}
     -\nabla_\f \mathcal{K}_b(\f)
@@ -380,10 +381,9 @@ We can estimate this gradient using any Monte Carlo method that generates sample
     \sum_{l=1}^L
     \frac{w^l}{\sum_{l'} w^{l'}}
     \nabla_\f
-    \log q_\f(z^l_{b} \,|\, x, z^l_{-b})
-    .
+    \log q_\f(z^l_{b} \,|\, x, z^l_{-b}).
 \end{align}
-In problems where we would like to learn a deep generative model $p_\q(\x, \z)$, we can apply a similar self-normalized gradient estimator of the form
+In problems where we additionally are interested in learning a generative model $p_\q(\x, \z)$, we can apply a similar self-normalized gradient estimator of the form
 \begin{align}
     \nabla_\q \log p_\q(\x) 
     &=
@@ -399,9 +399,9 @@ In problems where we would like to learn a deep generative model $p_\q(\x, \z)$,
     \log p_\q(x, z^l)
     .\nonumber
 \end{align}
-This identity holds due to the standard property $\E_{p_\q(z|x)}[\nabla_\q \log p_\q(z|x)]=0$ (see Appendix \ref{appendix:grad-theta} for details). 
+The identity in Equation~\ref{eq:grad-theta} holds due to the standard property $\E_{p_\q(z|x)}[\nabla_\q \log p_\q(z|x)]=0$ (see Appendix \ref{appendix:grad-theta} for details). 
 
-The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the gradient estimator (in Equation~\ref{eq:grad-phi-rws}) in reweighted wake-sleep methods, which also minimizes an inclusive KL divergence. In the next section, we will show that we jointly train a RWS-style encoder $q_\f(z | x)$ as the initial proposal, along with conditional proposals $q_\f(z_b | x, z_{-b})$.
+The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the gradient estimator used in reweighted wake sleep in Equation~\ref{eq:grad-phi-rws} which also minimizes an inclusive KL divergence. In the following we will address the problem of obtaining high quality samples to accuratelthe next section, we will show that we jointly train a RWS-style encoder $q_\f(z | x)$ as the initial proposal, along with conditional proposals $q_\f(z_b | x, z_{-b})$.
 \subsection{Generating High Quality Samples}
 %%%%%%%%Tuan Anh Edit
 % The proposed training method for learning the Gibbs conditionals is slow and their application during the test time results in a poor posterior approximation.
@@ -978,8 +978,8 @@ In this model, the global variables $z^\textsc{g} = \{\mu_{1:I}, \tau_{1:I}\}$ a
 \end{align*}
 where $\mathrm{I}[z_n \!=\! i]$ is an indicator function that evaluates to 1 if the equality holds, and 0 otherwise.
 
-We employ a variational distribution that updates global variables $q_\f(\mu, \tau \mid x, c)$ and local variables $q_\f(c \mid x, \mu, \tau)$, using point-wise neural sufficient statistics modeled after the ones in the analytical updates.
-We train our APG samplers on 20,000 GMM instances, each containing $I = 3$ clusters and $N = 60$ data points, with $K=5$ sweeps, $L=10$ particles, $20$ instances per batch, learning rate $2.5\times10^{-4}$, and $2\times10^5$ gradient steps.
+We employ a variational distribution that initializes samples by $q_\f(\mu, c | x)$ and iterates over $q_\f(c \mid x, \mu, \tau)$ and $q_\f(\mu, \tau \mid x, c)$ , using point-wise neural sufficient statistics modeled after the ones in the analytical updates.
+We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and $N = 60$ data points, with $K=5$ sweeps, $L=10$ particles, $20$ instances per batch, learning rate $2.5\times10^{-4}$, and $2\times10^5$ gradient steps.
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
@@ -1014,7 +1014,7 @@ Furthermore, we compare the APG sampler with other iterative inference methods, 
 \centering
 \caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
 We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
-For the GMM the test corpus contains $20,000$ instances, each of which has $N=100$ data points; In the DMM the test corpus contains $20,000$ instances with $N=600$ data points per instance; In the bouncing MNIST experiment the test corpus contains $10,000$ instances with $T=100$ time steps and $D=5$ digits.}
+For the GMM the test corpus contains $20,000$ instances, each of which has $N=100$ data points; In the DMM the test corpus contains $20,000$ instances with $N=600$ data points per instance; In the bouncing MNIST experiment the test corpus contains $10,000$ instances each containing $T=100$ time steps and $D=5$ digits.}
 
 \addtolength{\tabcolsep}{-2pt} 
 \begin{tabularx}{\textwidth}{cccccccccc}
@@ -1068,31 +1068,33 @@ We next consider the task of jointly training a deep generative mixture model (D
     c_n &\sim \mathrm{Cat}(\pi), \alpha_n \sim \text{Beta}(1, 1), n = 1, 2, ..., N \\
     x_n | c_n=i &\sim \text{N}(g_\q(\alpha_n) + \mu_i, \sigma^2_{\epsilon} I).
 \end{align*}
-Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and an embedding $\alpha_n$ which goes into a decoder $g_\q$, we sample a data point $x_n$ with 2D Gaussian noise. 
+Here $\mu_i$ is center of the $i$th ring. Given a cluster assignment $c_n$ and an embedding $\alpha_n$ which goes into a MLP decoder $g_\q$, we sample a data point $x_n$ with 2D Gaussian noise. 
 
-We employ a variational distribution that updates global variables $q_\f(\mu | x, c, \alpha)$ and local variables $q_\f(c, \alpha | x, \mu)$. Using APG sampler, we train our model on 20,000 DMM instances, each containing $I = 4$ clusters and $N=200$ points, with $K=8$ sweeps, $L=10$ particles, 20 instances per batch, learning rate $\mathrm{lr} = 10^{-4}$, and $3\times10^5$ gradient steps. (see Appendix \ref{appendix:architecture} for architecture).
+We employ a variational distribution that initializes samples by $q_\f(\mu, c, \alpha| x)$, and iterates over  $q_\f(c, \alpha | x, \mu)$ and $q_\f(\mu | x, c, \alpha)$. Using APG sampler, we train our model on 20,000 DMM instances, each containing $I = 4$ clusters and $N=200$ points, with $K=8$ sweeps, $L=10$ particles, 20 instances per batch, learning rate $10^{-4}$, and $3\times10^5$ gradient steps. (see Appendix \ref{appendix:architecture} for architecture).
 
 Once again, we compare the APG sampler with the encoders using RWS. Figure~\ref{fig:samples-dgmm} shows visualization of a single sample from variational distribution in on DMM instance The APG sampler scales to a large range of number of variables, whereas a standard encoder trained using RWS fails to produce reasonable proposals.
 
 \subsection{Time Series Model -- Bouncing MNIST}
-Finally, we apply the APG sampler to an unsupervised tracking model.
+Finally we consider the task of an unsupervised time series model, where our data is a corpus of video frames recording multiple bouncing MNIST digits. To demonstrate the scalability of APG samplers, we train both a deep generative model and a inference model with $60000$ video instances, each of which contains $T=10$ time steps and $D=3$ digits; Then we evaluate the model on test instances that contain $T=100$ time steps and $D=5$ digits.
 
-
-that is trained with video instances $T=10$ time steps and $D=3$ bouncing MNIST digits, and evaluate it with test instances containing $T=100$ time steps and $D=5$ digits.
-The data $x_{1:T}$ is a sequence of images of $D$ moving MNIST digits.
-Our generative model consists of global variables $\z_{1:D}^{\mathrm{what}}$ corresponding to digit latent variables and local variables $\z_{1:D, 1:T}^{\mathrm{where}}$ corresponding to the digit trajectories.
-The deep generative model is a state space model that factorizes across digits of the form
+Our generative model has the form
 \begin{align*}
     z^{\mathrm{what}}_{d} 
     &\sim 
-    \text{Norm}(0, I)
-    \\
-    z^{\mathrm{where}}_{d, 1} &\sim \text{Norm}(0, I)
+    \text{N}(0, I)
     ,
+    \,
+    z^{\mathrm{where}}_{d, 1} \sim \text{N}(0, I)
+    ,
+    \,
+    d=1, 2,.., D,
+    \\
     z^{\mathrm{where}}_{d, t} 
     %| z^{\mathrm{where}}_{d, t - 1} 
-    \sim 
-    \text{Norm}(z^{\mathrm{where}}_{d, t - 1}, \sigma^2_0 I) 
+    &\sim 
+    \text{Norm}(z^{\mathrm{where}}_{d, t - 1}, \sigma^2_0 I),
+    \,
+    t=1, 2,.., T,   
     \\
     x_t 
     %| z^\mathrm{where}_{d,t}, z^\mathrm{what}_d 
@@ -1109,10 +1111,11 @@ The deep generative model is a state space model that factorizes across digits o
         \Big)
     \Big)
 \end{align*}
-where $d=1, 2,.., D$, $t=1, 2,.., T$, and ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a feedforward decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on the location variable $z^{\mathrm{where}}_{d, t}$. 
+where $\z_{1:D}^{\mathrm{what}}$ are the latent code of digits, and $\z_{1:D, 1:T}^{\mathrm{where}}$ are time-dependent locations. ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a MLP decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on $z^{\mathrm{where}}_{d, t}$. 
 \begin{table}[t!]
     \centering
-    \caption{Mean squared error (MSE) between instances of test corpora (for different number of digits $D$ and time steps $T$, each containing 5000 video instances) and their reconstructions from the generative model. The inference model used to infer the latent variables was trained on instances with $T=10$ time steps. The reconstructions are then generated based on the inferred latent variables. APG sampler achive lower MSE compared to RWS and HMC-RWS and scales to $T=100$ time steps at test time.}
+    \caption{Mean squared error (MSE) between each test instance and its reconstruction across corpora (each has 5000 video instances) with different number of time steps $T$ and digits $D$.
+    APG sampler significantly improves the samples from RWS encoder, while HMC-RWS rarely has improvement.}
     \begin{tabularx}{\columnwidth}{ccccc}
     \toprule
         & RWS & HMC10x & APG & APG \\
@@ -1138,14 +1141,14 @@ where $d=1, 2,.., D$, $t=1, 2,.., T$, and ST is a spatial transformer \cite{jade
     \end{tabularx}
     \label{table:mse-bmnist}
 \end{table}
-Our amortized Gibbs updates employ $T + 1$ blocks $(z_{1:D}^{\mathrm{what}}, z_{1:D, 1}^{\mathrm{where}}, z_{1:D, 2}^{\mathrm{where}}, \dotsc, z_{1:D, T}^{\mathrm{where}})$.
+
+We employ a block update that decompose the variables into $T + 1$ blocks $(z_{1:D}^{\mathrm{what}}, z_{1:D, 1}^{\mathrm{where}}, z_{1:D, 2}^{\mathrm{where}}, \dotsc, z_{1:D, T}^{\mathrm{where}})$.
 % Empirically this works better than splitting the latent variables into global and local variables, since resampling at each time step $t$ helps disentangle the digit locations if they overlap.
-We train our model on 60000 bouncing MNIST instances, each of which contains $D=3$ digits and $T=10$ frame images. We use $5$ sequences per batch, $K=5$ sweeps, $L=10$ particles, $\mathrm{lr} = 10^{-4}$ learning rate for $1.2\times10^7$ iterations (see Appendix \ref{appendix:architecture} for architecture).
+We train our model on 60000 bouncing MNIST instances, each containing $T=10$ time steps and $D=3$ digits, with $K=5$ sweeps, $L=10$ particles, $K=5$ instances per batch, learning rate $10^{-4}$, and $1.2\times10^7$ gradient steps (see Appendix \ref{appendix:architecture} for architecture).
 
-We show that the scalability of APG sampler by testing the model on datasets up to $T=100$ time steps and $D=5$ digits. Figure~\ref{mnist-qualitative} shows the inference and reconstruction using single samples from the variational distribution (see Appendix \ref{appendix:full-recons} for results with full time steps). 
-Qualitatively, we see that the digit trajectories $\z_{1:D, 1:T}^{\mathrm{where}}$ and latent variables $\z_{1:D}^{\mathrm{what}}$ are inferred well.
+Figure~\ref{mnist-qualitative} shows that the APG sampler achieves substantial inference and reconstruction results, and scales to test instances with 100s latent variables.
 
-Table~\ref{table:log-joint-all} shows the average log joint density $\log p_\q (x, z)$ over 10000 test-time video instances with $T=100$ time steps and $D =5$ digits. 
+% Table~\ref{table:log-joint-all} shows the average log joint density $\log p_\q (x, z)$ over 10000 test-time video instances with $T=100$ time steps and $D =5$ digits. 
 
 
 \section{Conclusion}
