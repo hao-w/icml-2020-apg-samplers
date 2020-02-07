@@ -736,7 +736,7 @@ We begin by analysing APG samplers on a Gaussian mixture model (GMM) as an exemp
 This experiment allows us to analytically compute the conditional posterior to verify if the learned proposals indeed converge to the Gibbs kernels.
 Here APG samplers outperform other iterative inference methods even when using a smaller computational budget. 
 % Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
-Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood. We use APG samplers to jointly train the generative model and inference model and were able to perform accurate perform scalable inference to test-time instances with 600 points. 
+Next we consider a deep generative mixture model (DMM) that incorporates a neural likelihood and use APG samplers to jointly train the generative and inference model. We were able to perform accurate inference at test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
 In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by \citet{srivastava2015unsupervised} to consider up to five individual digits, and learn both a deep generative model for videos and an inference model that performs tracking. At test time we show that APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. 
 
@@ -806,7 +806,7 @@ We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and
 
 Figure~\ref{fig:samples-gmm} shows a single sample in a test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG sampler converges within 12 sweeps in GMMs with more variables than training instances.
 
-We compare the APG samplers with true Gibbs samplers and the baselines in section~\ref{sec:baselines}. Figure~\ref{fig:convergence-gmm} shows that the APG sampler converges to the $p_\q(x, z)$ achieved the true Gibbs sampler; it outperforms HMC-RWS even when we run it with 10 times the computation budget; and learned proposals substantially improve on inference since BPG does not converge even with 100x computational budget.
+We compare the APG samplers with true Gibbs samplers and the baselines in section~\ref{sec:baselines}. Figure~\ref{fig:convergence-gmm} shows that the APG sampler converges to the $p_\q(x, z)$ achieved the true Gibbs sampler; it outperforms HMC-RWS even when we run it with 10 times the computation budget; and learned proposals substantially improve on inference since BPG does not converge even with 100x computational budget. In addition, we verify the approximate Gibbs kernel converges to the true Gibbs kernel (see Appendix~\ref{appendix-kl-gmm-training}).
 
 \begin{figure}[t!]
 \centering
