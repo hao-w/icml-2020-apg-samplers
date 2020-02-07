@@ -474,7 +474,7 @@ This construction ensures that, at the $k$-th step we have a weight $w^k$ w.r.t.
          {q^1(z^1) \prod_{k'=2}^k q^{k'}(z^{k'} \mid z^{1:k'-1})}.
 \end{align*}
 
-In the following we will consider a sequence of intermediate target densities defined by a \emph{reverse kernel $r(z' \mid z)$:
+In the following we will consider a sequence of intermediate target densities defined by a \emph{reverse kernel} $r(z' \mid z)$:
 \begin{align*}
     \gamma^k(z^{1:k})
     =
@@ -494,7 +494,7 @@ Therefore, at each step $k$, we can treat the preceding samples $z^{k-1}$ as \em
          {p_\q(x,z^{k-1}) \: q(z^{k} \mid  z^{k-1})}
     .
 \end{align}
-This construction is valid for \emph{any} proposal kernel $q(z^k \mid z^{k-1})$ and reverse kernel $r(z^{k-1} \mid z^{k})$. For a given \emph{forward kernel} The \emph{optimal} reverse kernel for a proposal is
+This construction is valid for any \emph{proposal kernel}  $q(z^k \mid z^{k-1})$ and reverse kernel $r(z^{k-1} \mid z^{k})$. For a given proposal the \emph{optimal} reverse kernel is given by
 \begin{align*}
     r(z^{k-1} \mid  z^k)
     =   
@@ -1015,19 +1015,7 @@ In this model, the global variables $z^\textsc{g} = \{\mu_{1:I}, \tau_{1:I}\}$ a
 \end{align*}
 where $\mathrm{I}[z_n \!=\! i]$ is an indicator function that evaluates to 1 if the equality holds, and 0 otherwise.
 
-We employ a variational distribution that initializes samples by $q_\f(\mu, c | x)$ and iterates over $q_\f(c \mid x, \mu, \tau)$ and $q_\f(\mu, \tau \mid x, c)$ , using point-wise neural sufficient statistics modeled after the ones in the analytical updates.
-We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and $N = 60$ data points, with $K=5$ sweeps, $L=10$ particles, $20$ instances per batch, learning rate $2.5\times10^{-4}$, and $2\times10^5$ gradient steps.
-\begin{figure}[t!]
-\centering
-\includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
-  \caption{$\log p(x, z)$ as a function of number of sweeps for a GMM test instance. We perform APG sampler and Gibbs sampler using $L=100$ particles, BPS using $L=10,000$ particle (i.e.~100 times computation budget), HMC-RWS using $L=100$ particles and $1, 5, 10$ leapfrog steps (i.e.~1, 5, 10 times computation budget), respectively. To achive results comparable to AGP and Gibbs samplers, HMC-RWS needs a $10$ times larger sampling budget while BPS under-performs even with a $100$ times budget.}
-  \label{fig:convergence-gmm}
-\end{figure}
-% We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
-
-Figure~\ref{fig:samples-gmm} shows a single sample in test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG converges within 12 sweeps in GMM with more number of variables than training instances.
-
-\begin{table*}[b!]
+\begin{table*}[t!]
 \centering
 \caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
 We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
@@ -1047,12 +1035,26 @@ For the GMM the test corpus contains $20,000$ instances, each of which has $N=10
 \label{table:log-joint-all}
 \end{table*}
 
+We employ a variational distribution that initializes samples by $q_\f(\mu, c | x)$ and iterates over $q_\f(c \mid x, \mu, \tau)$ and $q_\f(\mu, \tau \mid x, c)$ , using point-wise neural sufficient statistics modeled after the ones in the analytical updates.
+We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and $N = 60$ data points, with $K=5$ sweeps, $L=10$ particles, $20$ instances per batch, learning rate $2.5\times10^{-4}$, and $2\times10^5$ gradient steps.
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
+  \caption{$\log p(x, z)$ as a function of number of sweeps for a GMM test instance. We perform APG sampler and Gibbs sampler using $L=100$ particles, BPS using $L=10,000$ particle (i.e.~100 times computation budget), HMC-RWS using $L=100$ particles and $1, 5, 10$ leapfrog steps (i.e.~1, 5, 10 times computation budget), respectively. To achive results comparable to AGP and Gibbs samplers, HMC-RWS needs a $10$ times larger sampling budget while BPS under-performs even with a $100$ times budget.}
+  \label{fig:convergence-gmm}
+\end{figure}
+% We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
+
+Figure~\ref{fig:samples-gmm} shows a single sample in test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG converges within 12 sweeps in GMM with more number of variables than training instances.
+
+
+
 Furthermore, we compare the APG sampler with other iterative inference methods, all of which start with initial proposals learned in APG sampler (to make fair comparison): (1) We apply true Gibbs sampling to verify that the learned proposals converge to conditional posterior. 
-(2) We run bootstrapped population sampling (BPS) where we employ the APG sampling scheme but propose $\mu, \tau$ from the prior $p(\mu, \tau)$. This shows how much we improve by learning the proposals under the same sampling scheme. (3) We perform Hamiltonian Monte Carlo (HMC) method for continuous variables $\mu, \tau$ by marginalizing the discrete variables $c$, and Gibbs updates $p(c | x, \mu, \tau)$ for discrete variables. Figure~\ref{fig:convergence-gmm} shows that APG sampler outperforms even when we run HMC with 10 time 10 times as many computation budget; And learned proposals substantially improves on inference since BPS does not converge even with 100 times budget.
+(2) We run bootstrapped population sampling (BPS) where we employ the APG sampling scheme but propose $\mu, \tau$ from the prior $p(\mu, \tau)$. This shows how much we improve by learning the proposals under the same sampling scheme. (3) We perform Hamiltonian Monte Carlo (HMC) method for continuous variables $\mu, \tau$ by marginalizing the discrete variables $c$, and Gibbs updates $p(c | x, \mu, \tau)$ for discrete variables. Figure~\ref{fig:convergence-gmm} shows that APG sampler outperforms even when we run HMC with 10 times the computation budget; And learned proposals substantially improves on inference since BPS does not converge even with 100 times budget.
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/budget_gmm.pdf}
-  \caption{$\log p(x, z)$ (left) and ESS (right) as a function of number of sweeps for APG samplers with different block update strategies and same overall sampling budget $K \cdot L = 1000$. A higher ESS can be is achived by performing more sweeps with fewer samples.}
+  \caption{$\log p(x, z)$ (left) and ESS (right) as a function of number of sweeps for APG samplers with different block update strategies and same overall sampling budget $K \cdot L = 1000$. A higher ESS can be is achieved by performing more sweeps with fewer samples.}
   \label{fig:fixed-budget-gmm}
 \end{figure}
 
@@ -1157,7 +1159,8 @@ Finally we consider the task of an unsupervised time series model, where our dat
 where $\z_{1:D}^{\mathrm{what}}$ are the latent code of digits, and $\z_{1:D, 1:T}^{\mathrm{where}}$ are time-dependent positions. ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a MLP decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on $z^{\mathrm{where}}_{d, t}$. 
 \begin{table}[t!]
     \centering
-    \caption{Mean squared error (MSE) between test instance and its reconstruction across corpora (each has 5000 video instances) with different number of time steps $T$ and digits $D$. All testings are performed using fixed budget $KL=1000$. APG sampler substantially improves the reconstruction (by improving sample quality of variables) from RWS encoder, compared with HMC-RWS.}
+    \caption{Mean-squared error (MSE) between test instance and its reconstruction across corpora (each has 5000 video instances) with different number of time steps $T$ and digits $D$. All tests are performed using fixed budget $KL=1000$. APG samplers achieve substantial improvements relative to RWS and HMC-RWS.}
+    \vspace{0.5em}
     \begin{tabularx}{\columnwidth}{ccccc}
     \toprule
         & RWS & HMC-RWS & APG & APG \\
@@ -1181,6 +1184,7 @@ where $\z_{1:D}^{\mathrm{what}}$ are the latent code of digits, and $\z_{1:D, 1:
     % \hspace{0.5em}D=3, T=100 & 137.3 & 127.4 & 56.0 & 55.7 \\
     \bottomrule
     \end{tabularx}
+    \vspace{-1em}
     \label{table:mse-bmnist}
 \end{table}
 
