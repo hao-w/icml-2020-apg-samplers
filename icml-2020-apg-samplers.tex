@@ -383,7 +383,9 @@ We can estimate this gradient using any Monte Carlo method that generates sample
     \nabla_\f
     \log q_\f(z^l_{b} \,|\, x, z^l_{-b}).
 \end{align}
-In problems where we additionally are interested in learning a generative model $p_\q(\x, \z)$, we can apply a similar self-normalized gradient estimator of the form
+% The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the gradient estimator used in reweighted wake sleep in Equation~\ref{eq:grad-phi-rws} which also minimizes an inclusive KL divergence. 
+
+In problems where we additionally want to learn a generative model $p_\q(\x, \z)$, we can compute a similar self-normalized gradient estimate 
 \begin{align}
     \nabla_\q \log p_\q(\x) 
     &=
@@ -397,11 +399,13 @@ In problems where we additionally are interested in learning a generative model 
     \frac{w^l}{\sum_{l'} w^{l'}}
     \nabla_\q
     \log p_\q(x, z^l)
-    .\nonumber
+    \nonumber
 \end{align}
-The identity in Equation~\ref{eq:grad-theta} holds due to the standard property $\E_{p_\q(z|x)}[\nabla_\q \log p_\q(z|x)]=0$ (see Appendix \ref{appendix:grad-theta} for details). 
+to maximize the marginal likelihood.
+The identity in Equation~\ref{eq:grad-theta} holds due to the identity \mbox{$\E_{p_\q(z|x)}[\nabla_\q \log p_\q(z|x)]=0$} (see Appendix \ref{appendix:grad-theta} for details). 
 
-The estimator in Equation~\ref{eq:grad-self-normalized} is similar to the gradient estimator used in reweighted wake sleep in Equation~\ref{eq:grad-phi-rws} which also minimizes an inclusive KL divergence. In the following we will address the problem of obtaining high quality samples to accuratelthe next section, we will show that we jointly train a RWS-style encoder $q_\f(z | x)$ as the initial proposal, along with conditional proposals $q_\f(z_b | x, z_{-b})$.
+In the following we will describe an adaptive importance sampling scheme to obtaining high quality samples to accurately estimate gradients for the conditional proposal $q_\f(z_b | x, z_{-b})$ and a one-shot encoder $q_\f(z | x)$ which we will use to obtain an initial set of samples.
+
 \subsection{Generating High Quality Samples}
 %%%%%%%%Tuan Anh Edit
 % The proposed training method for learning the Gibbs conditionals is slow and their application during the test time results in a poor posterior approximation.
