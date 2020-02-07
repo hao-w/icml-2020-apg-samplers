@@ -1006,7 +1006,9 @@ Moreover, both methods perform a joint update on all variables, while we conside
 \section{Experiments}
 \label{sec:experiments}
 
-We evaluate APG samplers in three tasks. We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. Here we verify that the learned proposals converge to the conditional posteriors, and show that APG can outperform other iterative inference methods, even when using a smaller computational budget. We next consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
+We evaluate APG samplers on three different tasks. 
+We begin by considering a Gaussian mixture model (GMM) as an exemplar of a model in the conjugate-exponential family. 
+Here the  verify that the learned proposals converge to the known conditional posteriors and show that APG can outperform other iterative inference methods, even when using a smaller computational budget. We next consider a deep generative mixture model (DMM) that incorporates a neural likelihood. Here APG samplers can jointly train the generative model and inference model, and perform scalable inference to test-time instances with 600 points. 
 % For both models we quantify performance in terms of the effective sample size (ESS) and the relative magnitude of the log joint.
 In our third experiment, we consider an unsupervised model for multiple bouncing MNIST data. We extend the task proposed by \citet{srivastava2015unsupervised} to consider up to five individual digits, and learn both a deep generative model for videos and an inference model that performs tracking. At test time we show that APG easily scales beyond previously reported results for a specialized recurrent architecture \cite{kosiorek2018sequential}. 
 
@@ -1024,12 +1026,12 @@ In the HMC-RWS baseline, we employ the standard RWS gradient estimators from Equ
 
 %state-of-art baseline that combines variational inference with Markov chain Monte Carlo methods.
 
-Unless otherwise stated, we compare methods under an equivalent computational budget. We compare an APG sampler that performs $K$ sweeps with $L$ particles to RWS with $K \cdot L$ particles. When comparing to HMC-RWS methods, we perform $K$ updates for $L$ particles with a number of leafrog steps $\text{LF in \{1,5,10\}}$, which corresponds to a 1x, 5x, and 10x computational budget as measured in terms of the number of evaluations of the log joint. 
+Unless otherwise stated, we compare methods under an equivalent computational budget. We compare an APG sampler that performs $K$ sweeps with $L$ particles to RWS with $K \cdot L$ particles. When comparing to HMC-RWS methods, we perform $K$ updates for $L$ particles with a number of leapfrog steps $\text{LF in \{1,5,10\}}$, which corresponds to a 1x, 5x, and 10x computational budget as measured in terms of the number of evaluations of the log joint. 
  
 
 %we compare it with multiple inference methods as baselines. The comparison is made under the same computation budget, which is defined as the number of times on evaluation of $p_\q(x, z)$. The first baseline is models trained by reweighted wake-sleep (RWS) methods, so that we can see the improvement by APG proposals.
 
-%As a means of assessing how much the learned proposals improved performance, we implement the bootstrapped population sampler (BPS), which employs the exact APG sampling scheme but proposes global (instance-level) variables from the prior $p(z)$. Since sampling from the prior is less likely to generate high-quality samples, we perform BPS with many more particles for the comparison.
+%As a means of assessing how much the learned proposals improved performance, we implement the bootstrapped population sampler (BPG), which employs the exact APG sampling scheme but proposes global (instance-level) variables from the prior $p(z)$. Since sampling from the prior is less likely to generate high-quality samples, we perform BPG with many more particles for the comparison.
 
 %We next consider one state-of-art baseline that combines variational inference with Markov chain Monte Carlo methods. One recent line of work by \citet{hoffman2017learning} is of our interest, but both the reparameterized gradient estimator and Hamiltonian Monte Carlo (HMC) algorithm in this approach are not applicable to to our mixture models, where discrete variables exist. In our third experiment we tried to train the tracking model using that approach, but due to the high-dimensional correlated variables, the HMC method cannot help the model to converge.
 
@@ -1066,14 +1068,14 @@ We train our model on 20,000 GMM instances, each containing $I = 3$ clusters and
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{figures/convergence_gmm_v2.pdf}
-  \caption{$\log p_\theta(x, z)$ as a function of number of sweeps for a GMM test instance. We perform APG sampling and Gibbs sampling using $L=100$ particles, BPS using $L=10,000$ particles (i.e.~$100\times$ the budget), HMC-RWS using $L=100$ particles and $1, 5, 10$ leapfrog steps (i.e.~$1, 5, 10\times$ the budget), respectively. To achive results comparable to APG and Gibbs samplers, HMC-RWS needs a $10\times$ larger computation budget, while BPS underperforms even with a $100\times$ budget.}
+  \caption{$\log p_\theta(x, z)$ as a function of number of sweeps for a GMM test instance. We perform each method with $L$ particles. For HMC-RWS, we perform multiple leapfrog steps \text{LF} in $\{1,5,10\}$. To achive results comparable to APG and Gibbs samplers, HMC-RWS needs a 10x computational budget, while BPG underperforms even with a 100x computational budget.}
   \label{fig:convergence-gmm}
 \end{figure}
 % We compare the APG sampler to samples from a standard encoder with MLP and LSTM architectures,  which is trained using reweighted wake-sleep (RWS). Both architectures are parameterized using the same neural sufficient statistics as the APG sampler.
 
 Figure~\ref{fig:samples-gmm} shows a single sample in a test instance with $N=100$ points. The sample is initialized from an RWS encoder and updated with APG sweeps. Even when using a parameterization that employs neural sufficient statistics, the RWS encoder fails to propose reasonable clusters, whereas the APG sampler converges within 12 sweeps in GMMs with more variables than training instances.
 
-We compare the APG samplers with true Gibbs samplers and the baselines in section~\ref{sec:baselines}. Figure~\ref{fig:convergence-gmm} shows that the APG sampler quickly converges to the $p_\q(x, z)$ achieved  the true Gibbs sampler; it outperforms HMC even when we run it with 10 times the computation budget; and learned proposals substantially improve on inference since BPS does not converge even with 100 times the budget.
+We compare the APG samplers with true Gibbs samplers and the baselines in section~\ref{sec:baselines}. Figure~\ref{fig:convergence-gmm} shows that the APG sampler converges to the $p_\q(x, z)$ achieved the true Gibbs sampler; it outperforms HMC-RWS even when we run it with 10 times the computation budget; and learned proposals substantially improve on inference since BPG does not converge even with 100x computational budget.
 
 
 
@@ -1098,7 +1100,7 @@ We compare the APG samplers with true Gibbs samplers and the baselines in sectio
 
 \begin{table*}[t!]
 \centering
-\caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPS, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
+\caption{$\log p_\q (x, z)$ averaged over test corpus for RWS, BPG, HMC-RWS, and Gibbs Sampling for different numbers of sweeps $K$.
 We run HMC-RWS with 1, 5, and 10 leapfrog integration steps, which corresponds to 1, 5, and 10 times the computational budget used by APG with the same number of sweeps.
 GMM's test corpus contains $20,000$ instances, each of which has $N=100$ data points. DMM's test corpus contains $20,000$ instances with $N=600$ data points per instance. Bouncing MNIST's test corpus contains $10,000$ instances each containing $T=100$ time steps and $D=5$ digits.
 In all tasks, APG with $K=20$ performs the best.}
@@ -1106,7 +1108,7 @@ In all tasks, APG with $K=20$ performs the best.}
 \addtolength{\tabcolsep}{-2pt} 
 \begin{tabularx}{\textwidth}{cccccccccc}
     \toprule
-     & RWS & BPS & HMC-RWS & HMC-RWS & HMC-RWS & APG & APG & APG & GIBBS \\
+     & RWS & BPG & HMC-RWS & HMC-RWS & HMC-RWS & APG & APG & APG & GIBBS \\
      & & K=20 & K=20, LF=1 & K=20, LF=5 & K=5, LF=10 & K=5 & K=10 & K=20 & K=20 \\
     \midrule
     GMM ($\times10^2$)& $-7.651$ & $-6.688$ & $-6.594$ & $-5.420$ & $-4.673$ & $-4.816$ & $-4.556$ & $\textbf{-4.469}$ & $-4.573$ \\
@@ -1190,7 +1192,7 @@ Finally, we consider the task of an unsupervised time series model, where our da
 where $\z_{1:D}^{\mathrm{what}}$ are the latent code of digits, and $\z_{1:D, 1:T}^{\mathrm{where}}$ are time-dependent positions. ST is a spatial transformer \cite{jaderberg2015spatial} that maps the output of a MLP decoder $\mu_\q$ that maps logits for a 28$\times$28 MNIST image onto a 96$\times$96 canvas based on $z^{\mathrm{where}}_{d, t}$. 
 \begin{table}[t!]
     \centering
-    \caption{Bouncing MNIST performance. Mean-squared error between test instance and its reconstruction across 5000 video instances with different number of time steps $T$ and digits $D$. We use a fixed sampling budget of $KL=1000$. APG samplers achieve substantial improvements relative to RWS and HMC-RWS.}
+    \caption{Bouncing MNIST performance. Mean-squared error between test instance and its reconstruction across 5000 video instances with different number of time steps $T$ and digits $D$. We use a fixed sampling budget of $K \cdot L=1000$. APG samplers achieve substantial improvements relative to RWS and HMC-RWS.}
     \vspace{0.5em}
     \begin{tabularx}{\columnwidth}{ccccc}
     \toprule
