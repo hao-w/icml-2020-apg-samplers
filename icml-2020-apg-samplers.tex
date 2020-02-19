@@ -682,7 +682,7 @@ We compare the APG samplers with true Gibbs samplers and the baselines in sectio
     \begin{tabularx}{\textwidth}{cccccccccc}
     \toprule
      & RWS & BPG & HMC-RWS & HMC-RWS & HMC-RWS & APG & APG & APG & GIBBS \\
-     & & K=20 & K=20, LF=1 & K=20, LF=5 & K=5, LF=10 & K=5 & K=10 & K=20 & K=20 \\
+     & & K=20 & K=20, LF=1 & K=20, LF=5 & K=20, LF=10 & K=5 & K=10 & K=20 & K=20 \\
     \midrule
     GMM ($\times10^2$)& $-7.651$ & $-6.688$ & $-6.594$ & $-5.420$ & $-4.673$ & $-4.816$ & $-4.556$ & $\textbf{-4.469}$ & $-4.573$ \\
     DMM ($\times10^3$) & $-3.172$ & $-4.204$ & $-2.185$ & $-2.184$ & $-2.184$ & $-2.050$ & $-2.040$ & $\textbf{-2.035}$ & -- \\
@@ -781,28 +781,31 @@ We show that APG samplers can train structured deep generative models with hundr
 \newpage
 \appendix
 \onecolumn
-\icmltitle{Supplementary Material: Amortized Population Gibbs Samplers with Neural Sufficient Statistics}
+\icmltitle{Supplementary Material: Amortized Population Gibbs Samplers\\ with Neural Sufficient Statistics}
 \icmlkeywords{Machine Learning, ICML}
 % \vskip 0.3in
 \section{Gradient of the generative model}% $p_\q(x \mid z)$}
 \label{appendix:grad-theta}
-This is actually a known (although indeed not obvious) identity. Briefly, we can express the expected gradient of the log joint as
+We show that the gradient of the marginal $\nabla_\q p_\q(x)$ can be estimated using self-normalized importance sampling. First of all, we express the expected gradient of the log joint as
 \begin{align*}
     \mathbb{E}_{p_\q(\z | \x)} 
     \left[
     \nabla_\q \log p_\q(\x, \z)
     \right]
+    =
     \mathbb{E}_{p_\q(\z | \x)} 
     \left[
     \nabla_\q \log p_\q(\x) + \nabla_\q \log p_\q(\z | \x)
     \right]
+    =
     \mathbb{E}_{p_\q(\z | \x)} 
     \left[
     \nabla_\q \log p_\q(\x) 
     \right]
+    =
     \nabla_\q \log p_\q(\x)
 \end{align*}
-Here we make use of a standard identity that is also used in, e.g., likelihood-ratio estimators
+Here we make use of a standard identity that is also used in likelihood-ratio estimators
 \begin{align*}
 \mathbb{E}_{p_\q(\z | \x)}
 \left[
@@ -826,13 +829,18 @@ Therefore, we have the the following equality
 \mathbb{E}_{p_\q(\z | \x)} 
 \left[
 \nabla_\q \log p_\q(\x, \z)
-\right].
+\right]
+\simeq
+\sum_{l=1}^L
+\frac{w^l}{\sum_{l'} w^{l'}}
+\nabla_\q
+\log p_\q(x, z^l).
 \end{align*}
-which is Equation ~\ref{eq:grad-theta}. As a result, we can then use self-normalized importance sampling to approximate     $\mathbb{E}_{p_\q(\z | \x)} \left[\nabla_\q \log p_\q(\x, \z) \right]$.
+which is the self-normalized gradient estimator in Equation ~\ref{eq:grad-theta}.
 
 \section{Importance weights in sequential importance sampling}
 \label{appendix:sis-weight}
-At step $k=1$, we use exactly the standard importance sampler, thus it is obvious that the following is a valid importance weight
+We will prove the form of importance weight $w^k$ in sequential importance sampling. At step $k=1$, we use exactly the standard importance sampler, thus it is obvious that the following is a valid importance weight
 \begin{align*}
     w^1 = \frac{\gamma^1(z^1)}{q^1(z^1)}.
 \end{align*}
@@ -854,7 +862,7 @@ At step $k=2$, the importance weight is defined as
     \frac{\gamma^2(z^{1:2})}{\gamma^{1}(z^{1})\:q^2(z^2 \mid z^{1})} \frac{\gamma^1(z^1)}{q^1(z^1)}
     \: = \frac{\gamma^2(z^{1:2})}{q^1(z^1) \: q^2(z^2 \mid z^{1})}.
 \end{align*}
-which is exactly that form. Now we prove weights in future steps by induction. At step $k\geq 2$, assume the weight has the form in Equation~\ref{appendix:eq:sis-weight}, i.e.
+which is exactly that form. Now we prove weights in future steps by induction. At step $k\geq 2$, we assume that the weight has the form in Equation~\ref{appendix:eq:sis-weight}, i.e.
 \begin{align*}
     w^k
     = 
@@ -877,6 +885,20 @@ then at step $k+1$, the importance weight is the product of incremental weight a
 Thus the importance weight $w^k$ has the form of Equation~\ref{appendix:eq:sis-weight} at each step $k>2$ in sequential importance sampling.
 \section{ Derivation of Posterior Invariance}
 \label{appendix:posterior-invariance}
+We consider a \emph{sweep} of conditional proposals as
+\begin{align}
+    \label{eq:approx-gibbs-kernel}
+    p_\q \big( \z^k \mid \x, \z^{k-1} \big)
+    &=
+    \prod_{b=1}^B
+    p_\q (\z^k_b \mid \x, \z^{k}_{\prec b}, \z^{k-1}_{\succ b})
+    ,
+\end{align}
+where $\z_{\prec b} = \{z_i \mid i < b\}$ and $\z_{\succ b} = \{z_i \mid i > b\}$. We will show that at 
+
+$p_\q(\z_b \,|\, x, z+{-b})$ will leave the posterior invariant as long as each single proposal leaves the poste
+
+
 We can see that individual block updates leave the posterior invariant by proposing variables $\z^k_{\preceq b}$ from a partial kernel $\kappa(\z^k_{\preceq b} \mid x, \z^{k-1})$ and then marginalize over the corresponding variables from the previous step $\z^{k-1}_{\preceq b}$,
 \begin{align*}
     \int 
@@ -902,14 +924,14 @@ We can see that individual block updates leave the posterior invariant by propos
     dz^{k-1}_{\preceq b} 
     \: 
     p_\q(\z^{k-1} \mid x)
-    \prod_{m=1}^b p_\q(\z^k_m \mid \x, \z^{k}_{\prec m}, \z^{k-1}_{\succ m})
+    \prod_{b=1}^b p_\q(\z^k_b \mid \x, \z^{k}_{\prec b}, \z^{k-1}_{\succ b})
     \\
     &=
     \int 
     dz^{k-1}_{\preceq b} 
     \: 
     p_\q(\z^{k-1} \mid \x)
-    p_\q(\z^k_{\preceq b} \mid \x, \z^{k-1}_{\succ 1})
+    p_\q(\z^k_{\preceq b} \mid \x, \z^{k-1}_{\succ b})
     \\
     %&=
     %\int d\z^{k-1}_{\preceq b} 
@@ -980,7 +1002,7 @@ where $\bar w^l := w^l / \sum_{l' = 1}^L w^{l'}$ is the normalized weight.
 
 
 \begin{proposition}[Nested importance sampling]
-    Adapted from \cite[Algorithm 1]{naesseth2015nested}.
+   This is similar to Algorithm 1 in \cite{naesseth2015nested}.
     Given unnormalized densities $\tilde q(z), \tilde p(z)$ with the normalizing constants $Z_q, Z_p$ and normalized densities $q(z), p(z)$, if 
     \begin{align}
         z, w \pw \tilde q, \label{eq:1}
@@ -1004,7 +1026,7 @@ where $\bar w^l := w^l / \sum_{l' = 1}^L w^{l'}$ is the normalized weight.
 
 \begin{proposition}[Resampling]
 \label{proposition:resampling}
-    Adapted from [Section 3.1] \cite{naesseth2015nested}.
+   This is similar to Section 3.1 in \cite{naesseth2015nested}.
     Given an unnormalized density $\tilde p(z)$ (normalizing constant $Z_p$, normalized density $p(z)$), if we have a set of properly weighted samples
     \begin{align}
         z^l, w^l \pw \tilde p,  \quad l = 1,\ldots, L \label{eq:bla}
@@ -1145,6 +1167,7 @@ since $z_{-b} = z_{-b}'$ and $z_b = z_b'$ due to the re-assignment (line~\ref{li
 
 \newpage
 \section{Architecture of the Amortized Population Gibbs samplers}
+Here are the architectures of the model in the 3 tasks:
 \label{appendix:architecture}
 \textbf{GMM:}
 \begin{table}[!h]
@@ -1413,7 +1436,7 @@ since $z_{-b} = z_{-b}'$ and $z_b = z_b'$ due to the re-assignment (line~\ref{li
 \newpage
 \section{Comparison between APG sampler and RWS method in Bouncing MNIST}
 \label{appendix:bmnist-comparison-rws}
-We visualize the inference results and reconstruction from the APG sampler and reweighted wake-sleep method. We can see that APG sampler significantly improves both tracking inference results and the reconstruction on instances with $T=20$ time steps and $D=5$ digits. 
+We visualize the inference results and reconstruction from the APG sampler and reweighted wake-sleep method. We can see that APG sampler significantly improves both tracking inference results and the reconstruction on instances with $T=20$ time steps and $D=5$ digits. We can see that the APG sampler achieves substantial results while the RWS method does not make reasonable prediction at all.
 \begin{figure*}[h!]
 \centering
 \includegraphics[width=150mm]{figures/bmnist-5digits-samples-with-rws-2.pdf}
@@ -1466,4 +1489,5 @@ The following are full reconstructions on test sets where time steps $T=100$ and
 \includegraphics[width=170mm]{figures/T=100-D=5-2.pdf}
 \caption{Full reconstruction for a video where $T=100, D=5$.}
 \end{figure*}
+
 \end{document}
